@@ -15,9 +15,14 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <memory.h>
+#define BUFFERSIZE 32
 using namespace std;
 int BUFFER_SIZE = 32;
 struct sockaddr_in echoserver;
+struct DataPackage{
+    int age;
+    char name[BUFFERSIZE];
+};
 int main(int argc, const char * argv[]) {
     int sock;
     char server_ip[] = "127.0.0.1";
@@ -56,7 +61,6 @@ int main(int argc, const char * argv[]) {
         else{
             //发送数据
             int echolen = strlen(word);
-            cout<<echolen<<endl;
             if(send(sock, word, echolen, 0)!=echolen){
                 cout<<"发送不匹配"<<endl;
                 exit(1);
@@ -70,7 +74,8 @@ int main(int argc, const char * argv[]) {
                 cout<<"接收失败"<<endl;
                 exit(1);
             }
-            cout<<buffer<<endl;
+            DataPackage *dp = (DataPackage*) buffer;
+            cout<<"名字:"<<dp->name<<"年龄"<<dp->age<<endl;
         }
         
     }

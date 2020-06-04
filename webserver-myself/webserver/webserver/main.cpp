@@ -19,7 +19,10 @@ using namespace std;
 #define MAXCONNECT 5
 #define BUFFERSIZE 32
 struct sockaddr_in echoserver,echoclient;
-
+struct DataPackage{
+    int age;
+    char name[BUFFERSIZE];
+};
 int main(int argc, const char * argv[]) {
     //    if(argc!=2){
     //        cout<<"参数错误，使用方法: echoserver <port>\n"<<endl;
@@ -64,14 +67,10 @@ int main(int argc, const char * argv[]) {
         else{
             receive_buffer[received] = '\0';
         }
-        cout<<receive_buffer<<endl;
-        if(0==strcmp(receive_buffer, "getName")){
-            char msg_buffer[] = "wuhao";
-            send(clientsock, msg_buffer, strlen(msg_buffer)+1, 0);
-        }
-        else if(0==strcmp(receive_buffer, "getAge")){
-            char msg_buffer[] = "24";
-            send(clientsock, msg_buffer, strlen(msg_buffer)+1, 0);
+        cout<<"接收的命令："<<receive_buffer<<endl;
+        if(0==strcmp(receive_buffer, "getInfo")){
+            DataPackage msg = {24,"吴浩"};
+            send(clientsock, (char*)&msg, sizeof(DataPackage), 0);
         }
         else{
             char msg_buffer[] = "???";
