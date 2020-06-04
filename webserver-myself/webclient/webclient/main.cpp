@@ -23,6 +23,28 @@ struct DataPackage{
     int age;
     char name[BUFFERSIZE];
 };
+enum CMD{
+    LOGIN,
+    LOGOUT,
+    ERROR
+};
+struct header{
+    int length;
+    CMD cmd;
+};
+struct LoginBody{
+    char username[BUFFERSIZE];
+    char password[BUFFERSIZE];
+};
+struct LoginResult{
+    int res;
+};
+struct LogoutBody{
+    char username[BUFFERSIZE];
+};
+struct LogoutResult{
+    int res;
+};
 int main(int argc, const char * argv[]) {
     int sock;
     char server_ip[] = "127.0.0.1";
@@ -59,23 +81,38 @@ int main(int argc, const char * argv[]) {
             break;
         }
         else{
-            //发送数据
-            int echolen = strlen(word);
-            if(send(sock, word, echolen, 0)!=echolen){
-                cout<<"发送不匹配"<<endl;
-                exit(1);
+            if(0==strcmp(word, "login")){
+                header send_header = {};
+                LoginBody send_login_body = {};
+                strcpy(send_login_body.username,"wuhao");
+                strcpy(send_login_body.password,"123456");
+                send_header.cmd = LOGIN;
+                send_header.length = sizeof(send_login_body);
+                send(sock, (header*)&send_header, sizeof(header), 0);
+                send(sock, (LoginBody*)&send_login_body, sizeof(LoginBody), 0);
+                header received_header = {};
+                LoginResult received_login_body = {};
+                int receivedheader_len = recv(sock, (header*)&received_header, sizeof(header), 0);
+                int receivedbody_len = recv(sock, (LoginResult*)&received_login_body, sizeof(LoginResult), 0);
+                cout<<"login:"<<received_login_body.res;
             }
-            //接收数据
-            cout<<"接收的数据为：\n"<<endl;
-            int havereceivedlen = 0;
-            char buffer[BUFFER_SIZE];
-            int receivedbytes = recv(sock, buffer, BUFFER_SIZE, 0);
-            if(receivedbytes<0){
-                cout<<"接收失败"<<endl;
-                exit(1);
+            else if(0==strcmp(word, "logout")){
+                header send_header = {};
+                LogoutBody send_logout_body = {};
+                strcpy(send_logout_body.username,"wuhao");
+                send_header.cmd = LOGOUT;
+                send_header.length = sizeof(send_logout_body);
+                send(sock, (header*)&send_header, sizeof(header), 0);
+                send(sock, (LogoutBody*)&send_logout_body, sizeof(LogoutBody), 0);
+                header received_header = {};
+                LogoutResult received_logout_body = {};
+                int receivedheader_len = recv(sock, (header*)&received_header, sizeof(header), 0);
+                int receivedbody_len = recv(sock, (LogoutResult*)&received_logout_body, sizeof(LogoutResult), 0);
+                cout<<"logout:"<<received_logout_body.res;
             }
-            DataPackage *dp = (DataPackage*) buffer;
-            cout<<"名字:"<<dp->name<<"年龄"<<dp->age<<endl;
+            else{
+                cout<<"没有此命令"<<endl;
+            }
         }
         
     }

@@ -19,15 +19,29 @@ using namespace std;
 #define MAXCONNECT 5
 #define BUFFERSIZE 32
 struct sockaddr_in echoserver,echoclient;
-struct DataPackage{
-    int age;
-    char name[BUFFERSIZE];
+enum CMD{
+    LOGIN,
+    LOGOUT,
+    ERROR
+};
+struct header{
+    int length;
+    CMD cmd;
+};
+struct LoginBody{
+    char username[BUFFERSIZE];
+    char password[BUFFERSIZE];
+};
+struct LoginResult{
+    int res;
+};
+struct LogoutBody{
+    char username[BUFFERSIZE];
+};
+struct LogoutResult{
+    int res;
 };
 int main(int argc, const char * argv[]) {
-    //    if(argc!=2){
-    //        cout<<"参数错误，使用方法: echoserver <port>\n"<<endl;
-    //        exit(1);
-    //    }
     int port = 8080;
     //创建服务器socket
     memset(&echoserver, 0, sizeof(echoserver));
@@ -55,26 +69,52 @@ int main(int argc, const char * argv[]) {
     }
     cout<<"客户端地址"<<inet_ntoa(echoclient.sin_addr)<<endl;
     while(1){
-        char receive_buffer[BUFFERSIZE];
-        memset(receive_buffer,sizeof(receive_buffer),'\0');
-        int received = recv(clientsock, receive_buffer, BUFFERSIZE, 0);
+        header receiveheader = {};
+        int received_header = recv(clientsock, (header*)&receiveheader, sizeof(header), 0);
         
         //处理buffer
-        if(received<=0){
+        if(received_header<=0){
             cout<<"客户端退出"<<endl;
             break;
         }
-        else{
-            receive_buffer[received] = '\0';
-        }
-        cout<<"接收的命令："<<receive_buffer<<endl;
-        if(0==strcmp(receive_buffer, "getInfo")){
-            DataPackage msg = {24,"吴浩"};
-            send(clientsock, (char*)&msg, sizeof(DataPackage), 0);
-        }
-        else{
-            char msg_buffer[] = "???";
-            send(clientsock, msg_buffer, strlen(msg_buffer)+1, 0);
+//        else{
+//            receive_buffer[received] = '\0';
+//        }
+        cout<<"接收的命令："<<receiveheader.cmd<<"接收的长度："<<receiveheader.length<<endl;
+        switch (receiveheader.cmd) {
+            case LOGIN:{
+                LoginBody received_loginBody = {};
+                int login_received_body_len = recv(clientsock, (LoginBody*)&received_loginBody, sizeof(LoginBody), 0);
+                cout<<"username:"<<received_loginBody.username<<" password"<<received_loginBody.password<<endl;
+                //判断登陆的信息
+                //登陆成功
+                LoginResult login_result= {1};
+                header send_header = {};
+                send_header.cmd = receiveheader.cmd;
+                send_header.length = sizeof(login_result);
+                send(clientsock, (header*)&send_header, sizeof(header), 0);
+                send(clientsock, (LoginResult*)&login_result, sizeof(LoginResult), 0);
+                }
+                break;
+            case LOGOUT:{
+                LogoutBody received_logoutBody = {};
+                int logout_received_body_len = recv(clientsock, (LogoutBody*)&received_logoutBody, sizeof(LogoutBody), 0);
+                cout<<"username:"<<received_logoutBody.username<<endl;
+                //判断登出的信息
+                //登出成功
+                LogoutResult logout_result= {1};
+                header send_header = {};
+                send_header.cmd = receiveheader.cmd;
+                send_header.length = sizeof(logout_result);
+                send(clientsock, (header*)&send_header, sizeof(header), 0);
+                send(clientsock, (LogoutResult*)&logout_result, sizeof(LogoutResult), 0);
+                }
+                break;
+            default:
+                //错误情况
+                receiveheader.cmd = ERROR;
+                send(clientsock, (header*)&receiveheader, sizeof(header), 0);
+                break;
         }
     }
     
