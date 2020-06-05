@@ -5,7 +5,6 @@
 //  Created by wu hao on 2020/6/4.
 //  Copyright © 2020 wu hao. All rights reserved.
 //
-
 #include <iostream>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -19,28 +18,48 @@ using namespace std;
 #define MAXCONNECT 5
 #define BUFFERSIZE 32
 struct sockaddr_in echoserver,echoclient;
+#pragma pack(1)
 enum CMD{
-    LOGIN,
-    LOGOUT,
+    CMD_LOGIN,
+    CMD_LOGIN_RESULT,
+    CMD_LOGOUT,
+    CMD_LOGOUT_RESULT,
     ERROR
 };
 struct header{
     int length;
     CMD cmd;
 };
-struct LoginBody{
+struct LoginMsg:public header{
+    LoginMsg(){
+        cmd = CMD_LOGIN;
+        length = 0;
+    };
     char username[BUFFERSIZE];
     char password[BUFFERSIZE];
 };
-struct LoginResult{
+struct LoginResult:public header{
+    LoginResult(){
+        cmd = CMD_LOGIN_RESULT;
+        length = 0;
+    };
     int res;
 };
-struct LogoutBody{
+struct LogoutMsg:public header{
+    LogoutMsg(){
+        cmd = CMD_LOGOUT;
+        length = 0;
+    };
     char username[BUFFERSIZE];
 };
-struct LogoutResult{
+struct LogoutResult:public header{
+    LogoutResult(){
+        cmd = CMD_LOGOUT_RESULT;
+        length = 0;
+    };
     int res;
 };
+#pragma pack()
 int main(int argc, const char * argv[]) {
     int port = 8080;
     //创建服务器socket
@@ -69,51 +88,52 @@ int main(int argc, const char * argv[]) {
     }
     cout<<"客户端地址"<<inet_ntoa(echoclient.sin_addr)<<endl;
     while(1){
-        header receiveheader = {};
-        int received_header = recv(clientsock, (header*)&receiveheader, sizeof(header), 0);
-        
+        char szRecv[1024];
+        int received_len = recv(clientsock, szRecv, sizeof(header), 0);
+        header* received_header = (header*) szRecv;
         //处理buffer
-        if(received_header<=0){
+        if(received_len<=0){
             cout<<"客户端退出"<<endl;
             break;
         }
 //        else{
 //            receive_buffer[received] = '\0';
 //        }
-        cout<<"接收的命令："<<receiveheader.cmd<<"接收的长度："<<receiveheader.length<<endl;
-        switch (receiveheader.cmd) {
-            case LOGIN:{
-                LoginBody received_loginBody = {};
-                int login_received_body_len = recv(clientsock, (LoginBody*)&received_loginBody, sizeof(LoginBody), 0);
-                cout<<"username:"<<received_loginBody.username<<" password"<<received_loginBody.password<<endl;
+        cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
+        switch (received_header->cmd) {
+            case CMD_LOGIN:{
+                int login_received_body_len = recv(clientsock,szRecv+sizeof(header), received_header->length-sizeof(header), 0);
+                LoginMsg *received_loginMsg = (LoginMsg*)szRecv;
+//                printf("username:%s,password:%s",received_loginMsg.username,received_loginMsg.password);
+                cout<<"username:"<<received_loginMsg->username<<" password"<<received_loginMsg->password<<endl;
                 //判断登陆的信息
                 //登陆成功
-                LoginResult login_result= {1};
-                header send_header = {};
-                send_header.cmd = receiveheader.cmd;
-                send_header.length = sizeof(login_result);
-                send(clientsock, (header*)&send_header, sizeof(header), 0);
-                send(clientsock, (LoginResult*)&login_result, sizeof(LoginResult), 0);
+                LoginResult login_result;
+                login_result.res = 1;
+                login_result.cmd = CMD_LOGIN_RESULT;
+                login_result.length = sizeof(LoginResult);
+                send(clientsock, (char*)&login_result, sizeof(LoginResult), 0);
                 }
                 break;
-            case LOGOUT:{
-                LogoutBody received_logoutBody = {};
-                int logout_received_body_len = recv(clientsock, (LogoutBody*)&received_logoutBody, sizeof(LogoutBody), 0);
-                cout<<"username:"<<received_logoutBody.username<<endl;
+            case CMD_LOGOUT:{
+                int logout_received_body_len = recv(clientsock,szRecv+sizeof(header), received_header->length-sizeof(header), 0);
+                LogoutMsg *received_logoutMsg = (LogoutMsg*)szRecv;
+                cout<<"username:"<<received_logoutMsg->username<<endl;
                 //判断登出的信息
                 //登出成功
-                LogoutResult logout_result= {1};
-                header send_header = {};
-                send_header.cmd = receiveheader.cmd;
-                send_header.length = sizeof(logout_result);
-                send(clientsock, (header*)&send_header, sizeof(header), 0);
-                send(clientsock, (LogoutResult*)&logout_result, sizeof(LogoutResult), 0);
+                LogoutResult logout_result;
+                logout_result.res = 1;
+                logout_result.cmd = CMD_LOGOUT_RESULT;
+                logout_result.length = sizeof(LogoutResult);
+                send(clientsock, (char*)&logout_result, sizeof(LogoutResult), 0);
                 }
                 break;
-            default:
+            default:{
                 //错误情况
-                receiveheader.cmd = ERROR;
-                send(clientsock, (header*)&receiveheader, sizeof(header), 0);
+                header errorheader;
+                errorheader.cmd = ERROR;
+                send(clientsock, (header*)&errorheader, sizeof(header), 0);
+                }
                 break;
         }
     }

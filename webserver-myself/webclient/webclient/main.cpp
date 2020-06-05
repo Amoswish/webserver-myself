@@ -19,32 +19,48 @@
 using namespace std;
 int BUFFER_SIZE = 32;
 struct sockaddr_in echoserver;
-struct DataPackage{
-    int age;
-    char name[BUFFERSIZE];
-};
+#pragma pack(1)
 enum CMD{
-    LOGIN,
-    LOGOUT,
+    CMD_LOGIN,
+    CMD_LOGIN_RESULT,
+    CMD_LOGOUT,
+    CMD_LOGOUT_RESULT,
     ERROR
 };
 struct header{
     int length;
     CMD cmd;
 };
-struct LoginBody{
+struct LoginMsg:public header{
+    LoginMsg(){
+        cmd = CMD_LOGIN;
+        length = 0;
+    };
     char username[BUFFERSIZE];
     char password[BUFFERSIZE];
 };
-struct LoginResult{
+struct LoginResult:public header{
+    LoginResult(){
+        cmd = CMD_LOGIN_RESULT;
+        length = 0;
+    };
     int res;
 };
-struct LogoutBody{
+struct LogoutMsg:public header{
+    LogoutMsg(){
+        cmd = CMD_LOGOUT;
+        length = 0;
+    };
     char username[BUFFERSIZE];
 };
-struct LogoutResult{
+struct LogoutResult:public header{
+    LogoutResult(){
+        cmd = CMD_LOGOUT_RESULT;
+        length = 0;
+    };
     int res;
 };
+#pragma pack()
 int main(int argc, const char * argv[]) {
     int sock;
     char server_ip[] = "127.0.0.1";
@@ -82,33 +98,25 @@ int main(int argc, const char * argv[]) {
         }
         else{
             if(0==strcmp(word, "login")){
-                header send_header = {};
-                LoginBody send_login_body = {};
-                strcpy(send_login_body.username,"wuhao");
-                strcpy(send_login_body.password,"123456");
-                send_header.cmd = LOGIN;
-                send_header.length = sizeof(send_login_body);
-                send(sock, (header*)&send_header, sizeof(header), 0);
-                send(sock, (LoginBody*)&send_login_body, sizeof(LoginBody), 0);
-                header received_header = {};
-                LoginResult received_login_body = {};
-                int receivedheader_len = recv(sock, (header*)&received_header, sizeof(header), 0);
-                int receivedbody_len = recv(sock, (LoginResult*)&received_login_body, sizeof(LoginResult), 0);
-                cout<<"login:"<<received_login_body.res;
+                LoginMsg send_login_msg;
+                strcpy(send_login_msg.username,"wuhao");
+                strcpy(send_login_msg.password,"123456");
+                send_login_msg.cmd = CMD_LOGIN;
+                send_login_msg.length = sizeof(LoginMsg);
+                send(sock, (LoginMsg*)&send_login_msg, sizeof(LoginMsg), 0);
+                LoginResult received_login_msg;
+                int receivedmsg_len = recv(sock, (char*)&received_login_msg, sizeof(LoginResult), 0);
+                cout<<"login:"<<received_login_msg.res;
             }
             else if(0==strcmp(word, "logout")){
-                header send_header = {};
-                LogoutBody send_logout_body = {};
-                strcpy(send_logout_body.username,"wuhao");
-                send_header.cmd = LOGOUT;
-                send_header.length = sizeof(send_logout_body);
-                send(sock, (header*)&send_header, sizeof(header), 0);
-                send(sock, (LogoutBody*)&send_logout_body, sizeof(LogoutBody), 0);
-                header received_header = {};
-                LogoutResult received_logout_body = {};
-                int receivedheader_len = recv(sock, (header*)&received_header, sizeof(header), 0);
-                int receivedbody_len = recv(sock, (LogoutResult*)&received_logout_body, sizeof(LogoutResult), 0);
-                cout<<"logout:"<<received_logout_body.res;
+                LogoutMsg send_logout_msg;
+                strcpy(send_logout_msg.username,"wuhao");
+                send_logout_msg.cmd = CMD_LOGOUT;
+                send_logout_msg.length = sizeof(LogoutMsg);
+                send(sock, (LogoutMsg*)&send_logout_msg, sizeof(LogoutMsg), 0);
+                LogoutResult received_logout_msg = {};
+                int receivedmsg_len = recv(sock, (char*)&received_logout_msg, sizeof(LogoutResult), 0);
+                cout<<"logout:"<<received_logout_msg.res;
             }
             else{
                 cout<<"没有此命令"<<endl;
