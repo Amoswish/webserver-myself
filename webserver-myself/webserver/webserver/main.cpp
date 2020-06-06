@@ -25,6 +25,7 @@ enum CMD{
     CMD_LOGIN_RESULT,
     CMD_LOGOUT,
     CMD_LOGOUT_RESULT,
+    CMD_NEWUSERJOIN,
     ERROR
 };
 struct header{
@@ -58,6 +59,14 @@ struct LogoutResult:public header{
         cmd = CMD_LOGOUT_RESULT;
         length = 0;
     };
+    int res;
+};
+struct NewUserJoin:public header{
+    NewUserJoin(){
+        cmd = CMD_NEWUSERJOIN;
+        length = 0;
+    };
+    int new_user_socket;
     int res;
 };
 #pragma pack()
@@ -148,7 +157,7 @@ int main(int argc, const char * argv[]) {
             __DARWIN_FD_SET(gclient[i], &fd_Read);
             maxfdp1 = max(maxfdp1,gclient[i]);
         }
-        timeval time_val= {0,0};
+        timeval time_val= {1,0};
         int ret = select(max(maxfdp1,server_sock)+1, &fd_Read, &fd_Write, &fd_Except, &time_val);
 //        int ret = select(max(maxfdp1,server_sock)+1, &fd_Read, &fd_Write, &fd_Except, NULL);
         if(ret<0){
@@ -166,8 +175,15 @@ int main(int argc, const char * argv[]) {
                 cout<<"accept失败"<<endl;
             }
             cout<<"客户端sock:"<<clientsock<<" 客户端地址:"<<inet_ntoa(echoclient.sin_addr)<<endl;
-            
+            //向客户端发送新用户加入的消息
+            NewUserJoin new_user_join;
+            new_user_join.new_user_socket = clientsock;
+            new_user_join.length = sizeof(NewUserJoin);
+            for(int i = gclient.size()-1;i>=0;i--){
+                send(gclient[i], (char *)&new_user_join, sizeof(NewUserJoin), 0);
+            }
             gclient.push_back(clientsock);
+            
         }
         //处理客户端socket连接请求
         for(int i = gclient.size()-1;i>=0;i--){
@@ -179,6 +195,7 @@ int main(int argc, const char * argv[]) {
                 }
             }
         }
+//         cout<<"空闲时间处理其他请求"<<endl;
     }
 //    for(auto i = gclient.be;i>=0;i--){
 //        if(-1==process(gclient[i])){
