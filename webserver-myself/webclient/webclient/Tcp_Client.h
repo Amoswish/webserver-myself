@@ -22,37 +22,36 @@
 using namespace std;
 class Tcp_Client{
 private:
-    int _socket = -1;
+    int _socket;
 public:
     //构造
-    Tcp_Client(){
-        
-    }
+    Tcp_Client():_socket(-1){}
     //析构
     virtual ~Tcp_Client(){
         if(_socket>0){
             close(_socket);
         }
     }
-    bool isRun(){
-        if(_socket>0) return true;
+    bool isRun() const{
+        if(get_socket()>0) return true;
         else return false;
     }
     int get_socket() const{
         return _socket;
     }
+    void Set_Socket(const int new_socket){
+        _socket = new_socket;
+    }
     //创建socket
     void Create_Socket(){
-       
         if(isRun()){
             //关闭旧连接
             close(_socket);
         }
-        _socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-        
+        Set_Socket(socket(PF_INET, SOCK_STREAM, IPPROTO_TCP));
     }
     //连接socket
-    int Connect(char *server_ip,int port){
+    int Connect(const char *server_ip,const int port) {
         if(!isRun()){
             Create_Socket();
         }
@@ -63,7 +62,7 @@ public:
         echoserver.sin_addr.s_addr = inet_addr(server_ip);//设置需要访问服务器的ip
         echoserver.sin_port = htons(port);//设置端口号 htons将端口号转为网络字节序
         //建立连接
-        int ret = connect(_socket,(struct sockaddr *)&echoserver, sizeof(echoserver));
+        int ret = connect(get_socket(),(struct sockaddr *)&echoserver, sizeof(echoserver));
         if(ret<0){
             cout<<"建立连接失败"<<endl;
         }
@@ -73,31 +72,30 @@ public:
         return ret;
     }
     //关闭连接
-    void Close_Socket(){
-        if(_socket>0){
-            close(_socket);
+    void Close_Socket() {
+        if(get_socket()>0){
+            close(get_socket());
         }
-        
+        Set_Socket(-1);
     }
-    
     //接收消息
-    int RecvMessage(){
+    int RecvMessage() const{
         //设置接收缓冲区
-        int serversock = get_socket();
         char szRecv[1024];
-        int received_len = recv(serversock, szRecv, sizeof(header), 0);
+        int received_len = recv(get_socket(), szRecv, sizeof(header), 0);
         header* received_header = (header*) szRecv;
         //处理buffer
         if(received_len<=0){
-            cout<<"服务端: "<<serversock<<" 退出"<<endl;
+            cout<<"服务端: "<<get_socket()<<" 退出"<<endl;
             return -1;
         }
         cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
-        recv(serversock, szRecv+sizeof(header), received_header->length-sizeof(header), 0);
+        recv(get_socket(), szRecv+sizeof(header), received_header->length-sizeof(header), 0);
         OnNetMsg(received_header);
         return 0;
     }
-    void OnNetMsg(const header* received_header){
+    //响应网络数据
+    virtual void OnNetMsg(const header* received_header) const{
         switch (received_header->cmd) {
             case CMD_LOGIN_RESULT:{
                 LoginResult *received_login_result = (LoginResult*)received_header;
@@ -119,13 +117,12 @@ public:
         }
     }
     //发送消息
-    int sendMsg(header* sendheader){
+    int sendMsg(const header* sendheader) const{
         if(isRun()&&sendheader){
             return send(get_socket(), (char*)sendheader, sendheader->length, 0);
         }
         return -1;
     }
-    
     // 处理消息
     bool onRun(){
         if(isRun()){

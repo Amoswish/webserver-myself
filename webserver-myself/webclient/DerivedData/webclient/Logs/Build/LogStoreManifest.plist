@@ -102,6 +102,38 @@
 			<key>uniqueIdentifier</key>
 			<string>020B5AB0-69DB-491E-9D4A-02FFF3E91DD8</string>
 		</dict>
+		<key>0252214C-2130-4629-8D89-35ECD0FD77E2</key>
+		<dict>
+			<key>className</key>
+			<string>IDEActivityLogSection</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>0252214C-2130-4629-8D89-35ECD0FD77E2.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>E</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Build webclient</string>
+			<key>timeStartedRecording</key>
+			<real>613228474.76630998</real>
+			<key>timeStoppedRecording</key>
+			<real>613228475.28566802</real>
+			<key>title</key>
+			<string>Build webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>0252214C-2130-4629-8D89-35ECD0FD77E2</string>
+		</dict>
 		<key>0342EF93-6DE4-4B39-98A4-C039BC50CCEA</key>
 		<dict>
 			<key>className</key>
@@ -293,6 +325,38 @@
 			<string>Build webclient</string>
 			<key>uniqueIdentifier</key>
 			<string>1110B5AC-3EB9-4678-AF03-7F80E62EB18A</string>
+		</dict>
+		<key>11A7CE92-2C7F-4EDE-A8B3-FFFE80828224</key>
+		<dict>
+			<key>className</key>
+			<string>IDEActivityLogSection</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>11A7CE92-2C7F-4EDE-A8B3-FFFE80828224.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Build webclient</string>
+			<key>timeStartedRecording</key>
+			<real>613228386.947047</real>
+			<key>timeStoppedRecording</key>
+			<real>613228387.90960503</real>
+			<key>title</key>
+			<string>Build webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>11A7CE92-2C7F-4EDE-A8B3-FFFE80828224</string>
 		</dict>
 		<key>128070DC-3E24-43AC-AB38-C135456F90E8</key>
 		<dict>
@@ -1158,6 +1222,38 @@
 			<key>uniqueIdentifier</key>
 			<string>35CC1855-1F66-4086-9CC5-0D77B90EE8A1</string>
 		</dict>
+		<key>3668D4D0-7AD5-4B56-80E6-08AFA786471B</key>
+		<dict>
+			<key>className</key>
+			<string>IDEActivityLogSection</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>3668D4D0-7AD5-4B56-80E6-08AFA786471B.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Build webclient</string>
+			<key>timeStartedRecording</key>
+			<real>613228500.55842698</real>
+			<key>timeStoppedRecording</key>
+			<real>613228501.35581601</real>
+			<key>title</key>
+			<string>Build webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>3668D4D0-7AD5-4B56-80E6-08AFA786471B</string>
+		</dict>
 		<key>36E1C331-5D95-4E49-9A7C-43F9A75206CB</key>
 		<dict>
 			<key>className</key>
@@ -1253,6 +1349,38 @@
 			<string>Build webclient</string>
 			<key>uniqueIdentifier</key>
 			<string>39795DFE-0C24-46F9-9B76-DDA457160A22</string>
+		</dict>
+		<key>3ABCD37F-4675-4DF9-84D4-51501E5F32CA</key>
+		<dict>
+			<key>className</key>
+			<string>IDEActivityLogSection</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>3ABCD37F-4675-4DF9-84D4-51501E5F32CA.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Build webclient</string>
+			<key>timeStartedRecording</key>
+			<real>613229171.85345399</real>
+			<key>timeStoppedRecording</key>
+			<real>613229173.20911002</real>
+			<key>title</key>
+			<string>Build webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>3ABCD37F-4675-4DF9-84D4-51501E5F32CA</string>
 		</dict>
 		<key>3B326865-49A5-4B38-B279-75B5D9134A97</key>
 		<dict>
@@ -3525,6 +3653,38 @@
 			<string>Build webclient</string>
 			<key>uniqueIdentifier</key>
 			<string>B6B565C8-75F0-4E27-BA67-53D3D0738280</string>
+		</dict>
+		<key>B79CB766-6774-44E9-9C91-03DC3CFF19A8</key>
+		<dict>
+			<key>className</key>
+			<string>IDEActivityLogSection</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>B79CB766-6774-44E9-9C91-03DC3CFF19A8.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Build webclient</string>
+			<key>timeStartedRecording</key>
+			<real>613228483.14031696</real>
+			<key>timeStoppedRecording</key>
+			<real>613228484.06290805</real>
+			<key>title</key>
+			<string>Build webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>B79CB766-6774-44E9-9C91-03DC3CFF19A8</string>
 		</dict>
 		<key>BFEDA6C2-ED1D-477E-8247-8A45C77BBB60</key>
 		<dict>

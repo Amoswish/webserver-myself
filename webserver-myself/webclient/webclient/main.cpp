@@ -18,15 +18,10 @@
 #include <thread>
 #include "Tcp_Client.h"
 #include "TcpMessage.h"
-#define BUFFERSIZE 32
 using namespace std;
-int BUFFER_SIZE = 32;
-struct sockaddr_in echoserver;
-
 void cmd_thread(Tcp_Client* client){
     while(1){
-        char word[BUFFER_SIZE];
-        memset(word,sizeof(word),'\0');
+        char word[1024];
         cin>>word;
         if(strlen(word)==0) continue;
         if(0==strcmp(word, "over")) {

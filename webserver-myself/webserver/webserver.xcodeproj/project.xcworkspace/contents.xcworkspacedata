@@ -2,6 +2,12 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:../TcpMessage.h">
+   </FileRef>
+   <FileRef
+      location = "group:../webserver/TcpMessage.h">
+   </FileRef>
+   <FileRef
       location = "self:webserver.xcodeproj">
    </FileRef>
 </Workspace>
