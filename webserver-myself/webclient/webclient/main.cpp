@@ -60,6 +60,11 @@ int main(int argc, const char * argv[]) {
     thread_1.detach();
     while(client.isRun()){
         //接收服务器端消息
+//        LogoutMsg send_logout_msg;
+//        strcpy(send_logout_msg.username,"wuhao");
+//        send_logout_msg.cmd = CMD_LOGOUT;
+//        send_logout_msg.length = sizeof(LogoutMsg);
+//        client.sendMsg(&send_logout_msg);
         client.onRun();
     }
     //关闭连接

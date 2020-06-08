@@ -20,11 +20,37 @@
 #include <memory.h>
 #include "Tcp_Server.h"
 #include "TcpMessage.h"
+#define recv_buffer_size 1024
 using namespace std;
+class ClientSocket{
+private:
+    int _socket;
+    char _recvMsg[recv_buffer_size*10];
+    int _lastPos;
+public:
+    ClientSocket(int socket = -1):_socket(socket),_lastPos(0){
+        memset(_recvMsg,'\0',sizeof(_recvMsg));
+    }
+    int getSocket() const{
+        return _socket;
+    }
+    void setSocket(const int socket) {
+        _socket = socket;
+    }
+    int getLastPos() const{
+        return _lastPos;
+    }
+    void setLastPos(const int lastPos){
+        _lastPos = lastPos;
+    }
+    char* getRecvMsg(){
+        return _recvMsg;
+    }
+};
 class Tcp_Server{
 private:
     int _serversocket;
-    vector<int> gclient;
+    vector<ClientSocket*> _clients;
 public:
     Tcp_Server():_serversocket(-1){}
     virtual ~Tcp_Server(){
@@ -90,6 +116,13 @@ public:
     }
     //关闭socket
     void Close_Socket() {
+        //关闭客户端socket
+        for(int i = (int)_clients.size()-1;i>=0;i--){
+            close(_clients[i]->getSocket());
+            delete _clients[i];
+        }
+        _clients.clear();
+        //关闭服务端socket
         if(getServerSocket()>0){
             close(getServerSocket());
             setServerSocket(-1);
@@ -101,7 +134,7 @@ public:
             fd_set fd_Read;
             fd_set fd_Write;
             fd_set fd_Except;
-            int maxfdp1;
+            int maxfdp1 = 0;
             //置空文件描述符
             __DARWIN_FD_ZERO(&fd_Read);
             __DARWIN_FD_ZERO(&fd_Write);
@@ -110,12 +143,12 @@ public:
             __DARWIN_FD_SET(getServerSocket(), &fd_Read);
             __DARWIN_FD_SET(getServerSocket(), &fd_Write);
             __DARWIN_FD_SET(getServerSocket(), &fd_Except);
-            for(int i = (int)gclient.size()-1;i>=0;i--){
+            for(int i = (int)_clients.size()-1;i>=0;i--){
                 //设置客户端soceket的文件描述符
-                __DARWIN_FD_SET(gclient[i], &fd_Read);
-                maxfdp1 = max(maxfdp1,gclient[i]);
+                __DARWIN_FD_SET(_clients[i]->getSocket(), &fd_Read);
+                maxfdp1 = max(maxfdp1,_clients[i]->getSocket());
             }
-            timeval time_val= {1,0};
+            timeval time_val= {0,0};
             int ret = select(max(maxfdp1,getServerSocket())+1, &fd_Read, &fd_Write, &fd_Except, &time_val);
             //        int ret = select(max(maxfdp1,server_sock)+1, &fd_Read, &fd_Write, &fd_Except, NULL);
             if(ret<0){
@@ -132,15 +165,17 @@ public:
                 new_user_join.new_user_socket = clientsock;
                 new_user_join.length = sizeof(NewUserJoin);
                 sendMsgToAll(&new_user_join);
-                gclient.push_back(clientsock);
+                ClientSocket * new_client = new ClientSocket(clientsock);
+                _clients.push_back(new_client);
             }
             //处理客户端socket连接请求
-            for(int i = (int)gclient.size()-1;i>=0;i--){
-                if(__DARWIN_FD_ISSET(gclient[i],&fd_Read)){
-                    if(-1==RecvMessage(gclient[i])){
+            for(int i = (int)_clients.size()-1;i>=0;i--){
+                if(__DARWIN_FD_ISSET(_clients[i]->getSocket(),&fd_Read)){
+                    if(-1==RecvMessage(_clients[i])){
                         //删除当前套接字
                         //__DARWIN_FD_CLR(gclient[i], &fd_Read);
-                        gclient.erase(gclient.begin()+i);
+                        delete _clients[i];
+                        _clients.erase(_clients.begin()+i);
                     }
                 }
             }
@@ -153,10 +188,10 @@ public:
         return getServerSocket()>0;
     }
     //接收数据，处理粘包、拆包
-    int RecvMessage(const int clientsock) const{
+    char szRecv[recv_buffer_size];
+    int RecvMessage(ClientSocket* clientsock) {
         //设置接收缓冲区
-        char szRecv[1024];
-        int received_len = recv(clientsock, szRecv, sizeof(header), 0);
+        int received_len = recv(clientsock->getSocket(), szRecv, recv_buffer_size, 0);
         header* received_header = (header*) szRecv;
         //处理buffer
         if(received_len<=0){
@@ -164,12 +199,24 @@ public:
             return -1;
         }
         cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
-        int login_received_body_len = recv(clientsock,szRecv+sizeof(header), received_header->length-sizeof(header), 0);
-        OnNetMsg(clientsock,received_header);
-        return login_received_body_len;
+        memcpy(clientsock->getRecvMsg()+clientsock->getLastPos(),szRecv,received_len);
+        clientsock->setLastPos(clientsock->getLastPos()+received_len);
+        while(clientsock->getLastPos()>=sizeof(header)){
+            header* received_header = (header*)clientsock->getRecvMsg();
+            if(clientsock->getLastPos()>=received_header->length){
+                int n_size = clientsock->getLastPos()-received_header->length;
+                cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
+                OnNetMsg(clientsock->getSocket(),received_header);
+                memcpy(clientsock->getRecvMsg(), clientsock->getRecvMsg()+received_header->length, n_size);
+                clientsock->setLastPos(n_size);
+            }
+            else break;
+        }
+        
+        return received_len;
     }
     //响应网络消息
-    virtual void OnNetMsg(const int clientsock,const header* received_header) const{
+    virtual void OnNetMsg(const int clientsock,const header* received_header) {
         switch (received_header->cmd) {
             case CMD_LOGIN:{
                 LoginMsg *received_loginMsg = (LoginMsg*)received_header;
@@ -199,6 +246,7 @@ public:
                 //错误情况
                 header errorheader;
                 errorheader.cmd = ERROR;
+                errorheader.length = sizeof(errorheader);
                 sendMsg(clientsock,&errorheader);
             }
                 break;
@@ -213,8 +261,8 @@ public:
     }
     //向所有socket发送数据
     void sendMsgToAll(const header* sendheader) const{
-        for(int i = (int)gclient.size()-1;i>=0;i--){
-            sendMsg(gclient[i],sendheader);
+        for(int i = (int)_clients.size()-1;i>=0;i--){
+            sendMsg(_clients[i]->getSocket(),sendheader);
         }
     }
 };

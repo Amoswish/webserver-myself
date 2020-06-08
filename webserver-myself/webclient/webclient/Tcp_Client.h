@@ -20,12 +20,18 @@
 #include <memory.h>
 #include "TcpMessage.h"
 using namespace std;
+#define recv_buffer_size 1024
 class Tcp_Client{
 private:
     int _socket;
+    //设置接收缓冲区
+    char _szRecv[recv_buffer_size] ;
+    //设置二级缓冲区解决粘包、少包问题
+    char _szRecvMsg[recv_buffer_size*10];
+    int _lastPos;
 public:
     //构造
-    Tcp_Client():_socket(-1){}
+    Tcp_Client():_socket(-1),_lastPos(0){}
     //析构
     virtual ~Tcp_Client(){
         if(_socket>0){
@@ -79,19 +85,27 @@ public:
         Set_Socket(-1);
     }
     //接收消息
-    int RecvMessage() const{
-        //设置接收缓冲区
-        char szRecv[1024];
-        int received_len = recv(get_socket(), szRecv, sizeof(header), 0);
-        header* received_header = (header*) szRecv;
+    int RecvMessage() {
+        int received_len = (int)recv(get_socket(), _szRecv, recv_buffer_size, 0);
         //处理buffer
         if(received_len<=0){
             cout<<"服务端: "<<get_socket()<<" 退出"<<endl;
             return -1;
         }
-        cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
-        recv(get_socket(), szRecv+sizeof(header), received_header->length-sizeof(header), 0);
-        OnNetMsg(received_header);
+        memcpy(_szRecvMsg+_lastPos, _szRecv, received_len);
+        _lastPos+=received_len;
+        while(_lastPos>=sizeof(header)){
+            header* received_header = (header*) _szRecvMsg;
+            if(_lastPos>=received_header->length){
+                int n_size = _lastPos-received_header->length;
+                cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
+                OnNetMsg(received_header);
+                memcpy(_szRecvMsg, _szRecvMsg+received_header->length, n_size);
+                _lastPos = n_size;
+            }
+            else break ;
+        }
+        
         return 0;
     }
     //响应网络数据
@@ -112,7 +126,13 @@ public:
                 cout<<"新用户加入，新用户的socket为"<<received_newuser_join->new_user_socket<<"\n"<<endl;
             }
                 break;
-            default:
+            case ERROR:{
+                cout<<"收到错误消息，"<<received_header->cmd<<"消息长度："<<received_header->length<<"\n"<<endl;
+            }
+                break;
+            default:{
+                cout<<"收到未定义消息，"<<received_header->cmd<<"消息长度："<<received_header->length<<"\n"<<endl;
+            }
                 break;
         }
     }
@@ -130,7 +150,7 @@ public:
             fd_set fd_Read;
             __DARWIN_FD_ZERO(&fd_Read);
             __DARWIN_FD_SET(_socket, &fd_Read);
-            timeval time_val = {1,0};
+            timeval time_val = {0,0};
             int res = select(_socket+1, &fd_Read, NULL, NULL, &time_val);
             if(res<0){
                 cout<<"select 出错，返回-1，结束\n"<<endl;
