@@ -8,7 +8,7 @@
 
 #ifndef TcpMessage_h
 #define TcpMessage_h
-#define arr_length 32
+#define arr_length 1024
 //static int length = 32;
 #pragma pack(1)
 enum CMD{

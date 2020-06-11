@@ -5,7 +5,6 @@
 //  Created by wu hao on 2020/6/7.
 //  Copyright © 2020 wu hao. All rights reserved.
 //
-
 #ifndef Tcp_Server_h
 #define Tcp_Server_h
 #include <iostream>
@@ -18,10 +17,14 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <memory.h>
+#include <mutex>
+#include <thread>
 #include "Tcp_Server.h"
 #include "TcpMessage.h"
-#define recv_buffer_size 1024
+#include "CELLTimestamp.h"
+#define recv_buffer_size 10240
 using namespace std;
+//客户端数据类型
 class ClientSocket{
 private:
     int _socket;
@@ -46,13 +49,157 @@ public:
     char* getRecvMsg(){
         return _recvMsg;
     }
+    int sendMsg(const header* sendheader) const{
+        if(sendheader){
+            return send(_socket,(const char*)sendheader, sendheader->length, 0);
+        }
+        return -1;
+    }
 };
-class Tcp_Server{
+//网络事件接口
+class INetEvent{
+private:
+public:
+    virtual void onNetLeave(ClientSocket* pClient) = 0;
+    virtual void onNetJoin(ClientSocket* pClient) = 0;
+    virtual void onNetMsg(ClientSocket* pClient,const header* received_header) = 0;
+};
+class CellServer{
+private:
+    //正式客户队列
+    int _serversocket;
+    std::vector<ClientSocket*> _clients;
+    //缓冲客户队列
+    std::vector<ClientSocket*> _clientsBuffer;
+    //接收消息缓冲队列
+    char szRecv[recv_buffer_size];
+    //缓冲队列锁
+    std::mutex _mutex;
+    std::thread _thread;
+    //网络事件对象
+    INetEvent* _pNetEvent;
+public:
+    
+public:
+    CellServer(int serversocket = -1):_serversocket(serversocket),_pNetEvent(NULL){}
+    virtual ~CellServer(){
+        Close_Socket();
+    }
+    int getServerSocket() const{
+        return _serversocket;
+    }
+    ssize_t getClientCount(){
+        return _clientsBuffer.size() +_clients.size();
+    }
+    void setInetEvent(INetEvent* pNetEvent){
+        _pNetEvent = pNetEvent;
+    }
+    //增加客户端
+    void addClient(ClientSocket* clientsocket){
+        //自解锁
+        std::lock_guard<std::mutex> lock(_mutex);
+        _clientsBuffer.push_back(clientsocket);
+    }
+    void Start(){
+        _thread = std::thread(std::mem_fn(&CellServer::onRun),this);
+    }
+    //是否工作
+    bool isRun() const{
+        return getServerSocket()>0;
+    }
+    //关闭socket
+    void Close_Socket() {
+        //关闭客户端socket
+        for(int i = (int)_clients.size()-1;i>=0;i--){
+            close(_clients[i]->getSocket());
+            delete _clients[i];
+        }
+        _clients.clear();
+    }
+    bool onRun(){
+        while(isRun()){
+            if(!_clientsBuffer.empty()){
+                //自解锁
+                std::lock_guard<std::mutex> lock(_mutex);
+                for (auto item_client:_clientsBuffer){
+                    _clients.push_back(item_client);
+                }
+                _clientsBuffer.clear();
+            }
+            if(_clients.empty()) continue;
+            fd_set fd_Read;
+            int maxfdp1 = 0;
+            //置空文件描述符
+            __DARWIN_FD_ZERO(&fd_Read);
+            for(int i = (int)_clients.size()-1;i>=0;i--){
+                //设置客户端soceket的文件描述符
+                __DARWIN_FD_SET(_clients[i]->getSocket(), &fd_Read);
+                maxfdp1 = max(maxfdp1,_clients[i]->getSocket());
+            }
+            int ret = select(max(maxfdp1,getServerSocket())+1, &fd_Read, NULL,NULL,NULL);
+            if(ret<0){
+                cout<<"select 出错，返回-1，结束"<<endl;
+                return false;
+            }
+            //处理客户端socket连接请求
+            for(int i = (int)_clients.size()-1;i>=0;i--){
+                if(__DARWIN_FD_ISSET(_clients[i]->getSocket(),&fd_Read)){
+                    if(-1==RecvMessage(_clients[i])){
+                        //删除当前套接字
+                        //__DARWIN_FD_CLR(gclient[i], &fd_Read);
+                        _pNetEvent->onNetLeave(_clients[i]);
+                        delete _clients[i];
+                        _clients.erase(_clients.begin()+i);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    //接收数据，处理粘包、拆包
+    
+    int RecvMessage(ClientSocket* clientsock) {
+        //设置接收缓冲区
+        int received_len = recv(clientsock->getSocket(), szRecv, recv_buffer_size, 0);
+        header* received_header = (header*) szRecv;
+        //处理buffer
+        if(received_len<=0){
+            return -1;
+        }
+        //        cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
+        memcpy(clientsock->getRecvMsg()+clientsock->getLastPos(),szRecv,received_len);
+        clientsock->setLastPos(clientsock->getLastPos()+received_len);
+        while(clientsock->getLastPos()>=sizeof(header)){
+            header* received_header = (header*)clientsock->getRecvMsg();
+            if(clientsock->getLastPos()>=received_header->length){
+                int n_size = clientsock->getLastPos()-received_header->length;
+                OnNetMsg(clientsock,received_header);
+                memcpy(clientsock->getRecvMsg(), clientsock->getRecvMsg()+received_header->length, n_size);
+                clientsock->setLastPos(n_size);
+            }
+            else break;
+        }
+        
+        return received_len;
+    }
+    //响应网络消息
+    virtual void OnNetMsg(ClientSocket* client,const header* received_header) {
+        _pNetEvent->onNetMsg(client,received_header);
+    //向指定socket发送数据
+    };
+};
+class Tcp_Server:public INetEvent{
 private:
     int _serversocket;
-    vector<ClientSocket*> _clients;
+    vector<CellServer*> _cellServers;
 public:
-    Tcp_Server():_serversocket(-1){}
+    CELLTimestamp _tTime;
+    //每秒接收到的消息计数
+    std::atomic_int _recvCount;
+    //客户端计数
+    std::atomic_int _clientCount;
+public:
+    Tcp_Server():_serversocket(-1),_recvCount(0),_clientCount(0){}
     virtual ~Tcp_Server(){
         Close_Socket();
     }
@@ -102,6 +249,16 @@ public:
         }
         return islisten;
     }
+    void Start(int thread_num = 1){
+        for(int i = 0;i<thread_num;i++){
+            auto ser = new CellServer(getServerSocket());
+            //注册网络事件
+            ser->setInetEvent(this);
+            _cellServers.push_back(ser);
+            //启动消息处理线程
+            ser->Start();
+        }
+    }
     //接收客户连接
     int AcceptClientConnect() const{
         //接收客户连接
@@ -111,17 +268,11 @@ public:
         if(clientsock<0){
             cout<<"accept失败"<<endl;
         }
-        cout<<"客户端sock:"<<clientsock<<" 客户端地址:"<<inet_ntoa(echoclient.sin_addr)<<endl;
+//        cout<<"客户端sock:"<<clientsock<<" 客户端地址:"<<inet_ntoa(echoclient.sin_addr)<<endl;
         return clientsock;
     }
     //关闭socket
     void Close_Socket() {
-        //关闭客户端socket
-        for(int i = (int)_clients.size()-1;i>=0;i--){
-            close(_clients[i]->getSocket());
-            delete _clients[i];
-        }
-        _clients.clear();
         //关闭服务端socket
         if(getServerSocket()>0){
             close(getServerSocket());
@@ -131,26 +282,14 @@ public:
     //处理网络消息
     bool onRun(){
         if(isRun()){
+            time4msg();
             fd_set fd_Read;
-            fd_set fd_Write;
-            fd_set fd_Except;
-            int maxfdp1 = 0;
             //置空文件描述符
             __DARWIN_FD_ZERO(&fd_Read);
-            __DARWIN_FD_ZERO(&fd_Write);
-            __DARWIN_FD_ZERO(&fd_Except);
             //设置文件描述符
             __DARWIN_FD_SET(getServerSocket(), &fd_Read);
-            __DARWIN_FD_SET(getServerSocket(), &fd_Write);
-            __DARWIN_FD_SET(getServerSocket(), &fd_Except);
-            for(int i = (int)_clients.size()-1;i>=0;i--){
-                //设置客户端soceket的文件描述符
-                __DARWIN_FD_SET(_clients[i]->getSocket(), &fd_Read);
-                maxfdp1 = max(maxfdp1,_clients[i]->getSocket());
-            }
-            timeval time_val= {0,0};
-            int ret = select(max(maxfdp1,getServerSocket())+1, &fd_Read, &fd_Write, &fd_Except, &time_val);
-            //        int ret = select(max(maxfdp1,server_sock)+1, &fd_Read, &fd_Write, &fd_Except, NULL);
+            timeval time_val= {1,0};
+            int ret = select(getServerSocket()+1, &fd_Read, NULL,NULL, &time_val);
             if(ret<0){
                 cout<<"select 出错，返回-1，结束"<<endl;
                 return false;
@@ -160,110 +299,36 @@ public:
                 __DARWIN_FD_CLR(getServerSocket(), &fd_Read);
                 //accept 处理请求
                 int clientsock = AcceptClientConnect();
-                //向客户端发送新用户加入的消息
-                NewUserJoin new_user_join;
-                new_user_join.new_user_socket = clientsock;
-                new_user_join.length = sizeof(NewUserJoin);
-                sendMsgToAll(&new_user_join);
-                ClientSocket * new_client = new ClientSocket(clientsock);
-                _clients.push_back(new_client);
-            }
-            //处理客户端socket连接请求
-            for(int i = (int)_clients.size()-1;i>=0;i--){
-                if(__DARWIN_FD_ISSET(_clients[i]->getSocket(),&fd_Read)){
-                    if(-1==RecvMessage(_clients[i])){
-                        //删除当前套接字
-                        //__DARWIN_FD_CLR(gclient[i], &fd_Read);
-                        delete _clients[i];
-                        _clients.erase(_clients.begin()+i);
-                    }
-                }
+                addClientToCellServer(new ClientSocket(clientsock));
             }
             return true;
         }
         else return false;  
     }
+    void addClientToCellServer(ClientSocket * new_client){
+        //将客户端加入到连接数最小的线程中
+        auto min_connect_cellServers = _cellServers[0];
+        for(auto item:_cellServers){
+            if(min_connect_cellServers->getClientCount()>item->getClientCount()) min_connect_cellServers = item;
+        }
+        min_connect_cellServers->addClient(new_client);
+        onNetJoin(new_client);
+    }
     //是否工作
+    virtual void onNetLeave(ClientSocket* pClient){}
+    virtual void onNetJoin(ClientSocket* pClient){}
+    virtual void onNetMsg(ClientSocket* pClient,const header* received_header){}
+    //网络消息计数
+    void time4msg(){
+        auto t1 = _tTime.getElapsedSecond();
+        if(t1>=1.0){
+            cout<<"time:"<<t1<<" socket:"<<_serversocket<<" client num:"<<_clientCount<<"recvCount:"<<_recvCount<<endl;
+            _tTime.update();
+             _recvCount = 0;
+        }
+    }
     bool isRun() const{
         return getServerSocket()>0;
-    }
-    //接收数据，处理粘包、拆包
-    char szRecv[recv_buffer_size];
-    int RecvMessage(ClientSocket* clientsock) {
-        //设置接收缓冲区
-        int received_len = recv(clientsock->getSocket(), szRecv, recv_buffer_size, 0);
-        header* received_header = (header*) szRecv;
-        //处理buffer
-        if(received_len<=0){
-            cout<<"客户端: "<<clientsock<<" 退出"<<endl;
-            return -1;
-        }
-        cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
-        memcpy(clientsock->getRecvMsg()+clientsock->getLastPos(),szRecv,received_len);
-        clientsock->setLastPos(clientsock->getLastPos()+received_len);
-        while(clientsock->getLastPos()>=sizeof(header)){
-            header* received_header = (header*)clientsock->getRecvMsg();
-            if(clientsock->getLastPos()>=received_header->length){
-                int n_size = clientsock->getLastPos()-received_header->length;
-                cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
-                OnNetMsg(clientsock->getSocket(),received_header);
-                memcpy(clientsock->getRecvMsg(), clientsock->getRecvMsg()+received_header->length, n_size);
-                clientsock->setLastPos(n_size);
-            }
-            else break;
-        }
-        
-        return received_len;
-    }
-    //响应网络消息
-    virtual void OnNetMsg(const int clientsock,const header* received_header) {
-        switch (received_header->cmd) {
-            case CMD_LOGIN:{
-                LoginMsg *received_loginMsg = (LoginMsg*)received_header;
-                cout<<"username:"<<received_loginMsg->username<<" password"<<received_loginMsg->password<<endl;
-                //判断登陆的信息
-                //登陆成功
-                LoginResult login_result;
-                login_result.res = 1;
-                login_result.cmd = CMD_LOGIN_RESULT;
-                login_result.length = sizeof(LoginResult);
-                sendMsg(clientsock,&login_result);
-            }
-                break;
-            case CMD_LOGOUT:{
-                LogoutMsg *received_logoutMsg = (LogoutMsg*)received_header;
-                cout<<"username:"<<received_logoutMsg->username<<endl;
-                //判断登出的信息
-                //登出成功
-                LogoutResult logout_result;
-                logout_result.res = 1;
-                logout_result.cmd = CMD_LOGOUT_RESULT;
-                logout_result.length = sizeof(LogoutResult);
-                sendMsg(clientsock,&logout_result);
-            }
-                break;
-            default:{
-                //错误情况
-                header errorheader;
-                errorheader.cmd = ERROR;
-                errorheader.length = sizeof(errorheader);
-                sendMsg(clientsock,&errorheader);
-            }
-                break;
-        }
-    }
-    //向指定socket发送数据
-    int sendMsg(const int clientsocket,const header* sendheader) const{
-        if(isRun()&&sendheader){
-            return send(clientsocket,(const char*)sendheader, sendheader->length, 0);
-        }
-        return -1;
-    }
-    //向所有socket发送数据
-    void sendMsgToAll(const header* sendheader) const{
-        for(int i = (int)_clients.size()-1;i>=0;i--){
-            sendMsg(_clients[i]->getSocket(),sendheader);
-        }
     }
 };
 

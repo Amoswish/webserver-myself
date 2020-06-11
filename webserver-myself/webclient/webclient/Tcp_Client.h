@@ -20,15 +20,16 @@
 #include <memory.h>
 #include "TcpMessage.h"
 using namespace std;
-#define recv_buffer_size 1024
+#define recv_buffer_size 10240
 class Tcp_Client{
 private:
     int _socket;
     //设置接收缓冲区
     char _szRecv[recv_buffer_size] ;
     //设置二级缓冲区解决粘包、少包问题
-    char _szRecvMsg[recv_buffer_size*10];
+    char _szRecvMsg[recv_buffer_size*5];
     int _lastPos;
+    bool _isConnect;
 public:
     //构造
     Tcp_Client():_socket(-1),_lastPos(0){}
@@ -57,7 +58,7 @@ public:
         Set_Socket(socket(PF_INET, SOCK_STREAM, IPPROTO_TCP));
     }
     //连接socket
-    int Connect(const char *server_ip,const int port) {
+    bool Connect(const char *server_ip,const int port) {
         if(!isRun()){
             Create_Socket();
         }
@@ -71,11 +72,13 @@ public:
         int ret = connect(get_socket(),(struct sockaddr *)&echoserver, sizeof(echoserver));
         if(ret<0){
             cout<<"建立连接失败"<<endl;
+            _isConnect = false;
         }
         else{
             cout<<"建立连接成功"<<endl;
         }
-        return ret;
+        _isConnect = true;
+        return _isConnect;
     }
     //关闭连接
     void Close_Socket() {
@@ -83,6 +86,7 @@ public:
             close(get_socket());
         }
         Set_Socket(-1);
+        _isConnect = false;
     }
     //接收消息
     int RecvMessage() {
@@ -138,7 +142,7 @@ public:
     }
     //发送消息
     int sendMsg(const header* sendheader) const{
-        if(isRun()&&sendheader){
+        if(isRun()&&sendheader&&_isConnect){
             return send(get_socket(), (char*)sendheader, sendheader->length, 0);
         }
         return -1;

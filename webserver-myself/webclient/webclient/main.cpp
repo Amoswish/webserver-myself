@@ -16,9 +16,11 @@
 #include <netinet/in.h>
 #include <memory.h>
 #include <thread>
+#include<vector>
 #include "Tcp_Client.h"
 #include "TcpMessage.h"
 using namespace std;
+int gbrun = 1;
 void cmd_thread(Tcp_Client* client){
     while(1){
         char word[1024];
@@ -26,7 +28,7 @@ void cmd_thread(Tcp_Client* client){
         if(strlen(word)==0) continue;
         if(0==strcmp(word, "over")) {
             cout<<"over"<<endl;
-            client->Close_Socket();
+            gbrun = 0;
             break;
         }
         else{
@@ -52,23 +54,46 @@ void cmd_thread(Tcp_Client* client){
     }
     return ;
 }
-int main(int argc, const char * argv[]) {
-    Tcp_Client client;
-    client.Connect("127.0.0.1", 8080);
-    // 启动线程
-    std::thread thread_1(cmd_thread,&client);
-    thread_1.detach();
-    while(client.isRun()){
-        //接收服务器端消息
-//        LogoutMsg send_logout_msg;
-//        strcpy(send_logout_msg.username,"wuhao");
-//        send_logout_msg.cmd = CMD_LOGOUT;
-//        send_logout_msg.length = sizeof(LogoutMsg);
-//        client.sendMsg(&send_logout_msg);
-        client.onRun();
+int clientCount = 10;
+int threadCount = 4;
+vector<Tcp_Client*> clients(clientCount*threadCount);
+void sendThread(int index){
+    int start = (index-1)*clientCount;
+    int end = (index)*clientCount;
+    for(int i = start;i<end;i++){
+        clients[i] = new Tcp_Client;
+        clients[i]->Connect("127.0.0.1", 9080);
+    }
+    
+    
+    LogoutMsg send_logout_msg;
+    strcpy(send_logout_msg.username,"wuhao");
+    send_logout_msg.cmd = CMD_LOGOUT;
+    send_logout_msg.length = sizeof(LogoutMsg);
+    while(gbrun){
+        for(int i = start;i<end;i++){
+            clients[i]->sendMsg(&send_logout_msg);
+            clients[i]->onRun();
+        }
+        
     }
     //关闭连接
-    client.Close_Socket();
+    for(int i = start;i<end;i++){
+        clients[i]->Close_Socket();
+        delete clients[i];
+    }
+}
+int main(int argc, const char * argv[]) {
+//     启动UI线程
+//        std::thread thread_ui(cmd_thread,&client);
+//        thread_ui.detach();
+
+    
+    for(int i = 1;i<=threadCount;i++){
+            std::thread thread_1(sendThread,i);
+            thread_1.detach();
+    }
+    while(1){};
     exit(0);
     return 0;
 }
