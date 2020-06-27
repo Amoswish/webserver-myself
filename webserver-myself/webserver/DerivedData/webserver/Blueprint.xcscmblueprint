@@ -1,0 +1,23 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "12057766339AA053D29596302066D891F7739133",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "12057766339AA053D29596302066D891F7739133" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "18446AD6-DB5C-4F1C-AA35-07B01159E4E6",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "12057766339AA053D29596302066D891F7739133" : "echo_server\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "webserver",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "webserver-myself\/webserver\/webserver.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "git@github.com:Amoswish\/webserver-myself.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "12057766339AA053D29596302066D891F7739133"
+    }
+  ]
+}

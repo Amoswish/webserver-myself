@@ -32,8 +32,11 @@ public:
         cout<<"客户端: "<<pClient->getSocket()<<" 退出"<<endl;
         _clientCount--;
     };
-    virtual void onNetMsg(ClientSocket* pClient,const header* received_header){
+    virtual void onNetRecv(ClientSocket* pClient){
         _recvCount++;
+    };
+    virtual void onNetMsg(ClientSocket* pClient,const header* received_header){
+        _msgCount++;
         switch (received_header->cmd) {
             case CMD_LOGIN:{
                 LoginMsg *received_loginMsg = (LoginMsg*)received_header;
@@ -49,7 +52,7 @@ public:
                 break;
             case CMD_LOGOUT:{
                 LogoutMsg *received_logoutMsg = (LogoutMsg*)received_header;
-                //                cout<<"username:"<<received_logoutMsg->username<<endl;
+//                                cout<<"username:"<<received_logoutMsg->username<<endl;
                 //判断登出的信息
                 //登出成功
                 LogoutResult logout_result;
@@ -75,7 +78,7 @@ int main(int argc, const char * argv[]) {
     MyServer tcp_server;
     tcp_server.InitSocket();
     //绑定服务器socket
-    tcp_server.Bind(NULL, 9080);
+    tcp_server.Bind(NULL, 9081);
     //开始监听
     tcp_server.Listen(MAXCONNECT);
     //处理请求

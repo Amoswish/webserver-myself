@@ -102,7 +102,7 @@ public:
             header* received_header = (header*) _szRecvMsg;
             if(_lastPos>=received_header->length){
                 int n_size = _lastPos-received_header->length;
-                cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
+//                cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
                 OnNetMsg(received_header);
                 memcpy(_szRecvMsg, _szRecvMsg+received_header->length, n_size);
                 _lastPos = n_size;
@@ -117,17 +117,17 @@ public:
         switch (received_header->cmd) {
             case CMD_LOGIN_RESULT:{
                 LoginResult *received_login_result = (LoginResult*)received_header;
-                cout<<"登陆是否成功"<<received_login_result->res<<"\n"<<endl;
+//                cout<<"登陆是否成功"<<received_login_result->res<<"\n"<<endl;
             }
                 break;
             case CMD_LOGOUT_RESULT:{
                 LogoutResult *received_logout_result = (LogoutResult*)received_header;
-                cout<<"登出是否成功"<<received_logout_result->res<<"\n"<<endl;
+//                cout<<"登出是否成功"<<received_logout_result->res<<"\n"<<endl;
             }
                 break;
             case CMD_NEWUSERJOIN:{
                 NewUserJoin *received_newuser_join = (NewUserJoin*)received_header;
-                cout<<"新用户加入，新用户的socket为"<<received_newuser_join->new_user_socket<<"\n"<<endl;
+//                cout<<"新用户加入，新用户的socket为"<<received_newuser_join->new_user_socket<<"\n"<<endl;
             }
                 break;
             case ERROR:{

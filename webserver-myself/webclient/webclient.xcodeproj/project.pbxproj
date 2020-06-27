@@ -27,6 +27,7 @@
 		6869EE2F2488F35B0000A752 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		6869EE38248B34800000A752 /* Tcp_Client.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Tcp_Client.h; sourceTree = "<group>"; };
 		6869EE3A248B49B40000A752 /* TcpMessage.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TcpMessage.h; sourceTree = "<group>"; };
+		6882DEBC24A5E4230095BFAD /* CELLTimestamp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CELLTimestamp.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +63,7 @@
 				6869EE3A248B49B40000A752 /* TcpMessage.h */,
 				6869EE2F2488F35B0000A752 /* main.cpp */,
 				6869EE38248B34800000A752 /* Tcp_Client.h */,
+				6882DEBC24A5E4230095BFAD /* CELLTimestamp.h */,
 			);
 			path = webclient;
 			sourceTree = "<group>";

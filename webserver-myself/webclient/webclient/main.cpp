@@ -16,9 +16,10 @@
 #include <netinet/in.h>
 #include <memory.h>
 #include <thread>
-#include<vector>
+#include <vector>
 #include "Tcp_Client.h"
 #include "TcpMessage.h"
+#include "CELLTimestamp.h"
 using namespace std;
 int gbrun = 1;
 void cmd_thread(Tcp_Client* client){
@@ -57,25 +58,32 @@ void cmd_thread(Tcp_Client* client){
 int clientCount = 10;
 int threadCount = 4;
 vector<Tcp_Client*> clients(clientCount*threadCount);
+atomic_int sendCount(0);
+atomic_int readyCount(0);
 void sendThread(int index){
     int start = (index-1)*clientCount;
     int end = (index)*clientCount;
     for(int i = start;i<end;i++){
         clients[i] = new Tcp_Client;
-        clients[i]->Connect("127.0.0.1", 9080);
+        clients[i]->Connect("127.0.0.1", 9081);
     }
     
-    
+    readyCount++;
+    while(readyCount<threadCount){
+        std::chrono::milliseconds t(10);
+        std::this_thread::sleep_for(t);
+    }
     LogoutMsg send_logout_msg;
     strcpy(send_logout_msg.username,"wuhao");
     send_logout_msg.cmd = CMD_LOGOUT;
     send_logout_msg.length = sizeof(LogoutMsg);
     while(gbrun){
         for(int i = start;i<end;i++){
-            clients[i]->sendMsg(&send_logout_msg);
-            clients[i]->onRun();
+            if(-1!=clients[i]->sendMsg(&send_logout_msg)){
+                sendCount++;
+                clients[i]->onRun();
+            }
         }
-        
     }
     //关闭连接
     for(int i = start;i<end;i++){
@@ -88,13 +96,21 @@ int main(int argc, const char * argv[]) {
 //        std::thread thread_ui(cmd_thread,&client);
 //        thread_ui.detach();
 
-    
+    //启动发送线程
     for(int i = 1;i<=threadCount;i++){
             std::thread thread_1(sendThread,i);
             thread_1.detach();
     }
-    while(1){};
-    exit(0);
+    CELLTimestamp tTime;
+    while(gbrun){
+        auto t = tTime.getElapsedSecond();
+        if(t>1.0){
+            cout<<"thread:"<<threadCount<<"clients"<<clientCount<<"time"<<t<<"send"<<sendCount<<endl;
+            sendCount = 0;
+            tTime.update();
+        }
+        sleep(1);
+    }
     return 0;
 }
 

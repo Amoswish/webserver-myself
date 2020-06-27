@@ -22,17 +22,24 @@
 #include "Tcp_Server.h"
 #include "TcpMessage.h"
 #include "CELLTimestamp.h"
-#define recv_buffer_size 10240
+#define recv_buffer_size 10240*5
+#define send_buffer_size 10240*5
+#define SOCKET_ERROR -1
 using namespace std;
 //客户端数据类型
 class ClientSocket{
 private:
     int _socket;
-    char _recvMsg[recv_buffer_size*10];
-    int _lastPos;
+    //消息接收缓冲区
+    char _recvMsgBuffer[recv_buffer_size*10];
+    int _lastRecvPos;
+    //消息发送缓冲区
+    char _SendBuffer[recv_buffer_size*10];
+    int _lastSendPos;
 public:
-    ClientSocket(int socket = -1):_socket(socket),_lastPos(0){
-        memset(_recvMsg,'\0',sizeof(_recvMsg));
+    ClientSocket(int socket = -1):_socket(socket),_lastRecvPos(0),_lastSendPos(0){
+        memset(_recvMsgBuffer,'\0',recv_buffer_size);
+        memset(_SendBuffer,'\0',send_buffer_size);
     }
     int getSocket() const{
         return _socket;
@@ -40,20 +47,55 @@ public:
     void setSocket(const int socket) {
         _socket = socket;
     }
-    int getLastPos() const{
-        return _lastPos;
+    int getLastRecvPos() const{
+        return _lastRecvPos;
     }
-    void setLastPos(const int lastPos){
-        _lastPos = lastPos;
+    void setLastRecvPos(const int lastRecvPos){
+        _lastRecvPos = lastRecvPos;
     }
     char* getRecvMsg(){
-        return _recvMsg;
+        return _recvMsgBuffer;
     }
-    int sendMsg(const header* sendheader) const{
-        if(sendheader){
-            return send(_socket,(const char*)sendheader, sendheader->length, 0);
+    int getLastSendPos() const{
+        return _lastSendPos;
+    }
+    void setLastSendPos(const int lastSendPos){
+        _lastSendPos = lastSendPos;
+    }
+    char* getSendBuffer(){
+        return _SendBuffer;
+    }
+    int sendMsg(const header* sendheader) {
+        int ret = SOCKET_ERROR;
+        //要发送的数据长度
+        int nSendLen = sendheader->length;
+        //要发送的数据
+        const char* pSendData = (const char*) sendheader;
+        while(true){
+            if(getLastSendPos()+nSendLen >= send_buffer_size){
+                //计算可拷贝的数据长度
+                int nCopyLen = send_buffer_size-getLastSendPos();
+                memcpy(_SendBuffer+getLastSendPos(),pSendData,nCopyLen);
+                //计算剩余的数据位置
+                pSendData += nCopyLen;
+                //计算剩余的数据长度
+                nSendLen -= nCopyLen;
+                //发送数据
+                ret = send(getSocket(),_SendBuffer, send_buffer_size, 0);
+                setLastSendPos(0);
+                //如果发送错误
+                if(ret==SOCKET_ERROR) return ret;
+            }
+            else{
+                memcpy(_SendBuffer+getLastSendPos(),pSendData,nSendLen);
+                setLastSendPos(getLastSendPos() + nSendLen);
+                break;
+            }
         }
-        return -1;
+//        if(sendheader){
+//            ret = send(_socket,(const char*)sendheader, sendheader->length, 0);
+//        }
+        return ret;
     }
 };
 //网络事件接口
@@ -63,6 +105,7 @@ public:
     virtual void onNetLeave(ClientSocket* pClient) = 0;
     virtual void onNetJoin(ClientSocket* pClient) = 0;
     virtual void onNetMsg(ClientSocket* pClient,const header* received_header) = 0;
+    virtual void onNetRecv(ClientSocket* pClient) = 0;
 };
 class CellServer{
 private:
@@ -71,15 +114,11 @@ private:
     std::vector<ClientSocket*> _clients;
     //缓冲客户队列
     std::vector<ClientSocket*> _clientsBuffer;
-    //接收消息缓冲队列
-    char szRecv[recv_buffer_size];
     //缓冲队列锁
     std::mutex _mutex;
     std::thread _thread;
     //网络事件对象
     INetEvent* _pNetEvent;
-public:
-    
 public:
     CellServer(int serversocket = -1):_serversocket(serversocket),_pNetEvent(NULL){}
     virtual ~CellServer(){
@@ -116,6 +155,11 @@ public:
         }
         _clients.clear();
     }
+//    备份客户端fdread
+    fd_set _fdRead_bak;
+//    客户端列表是否有变化
+    bool _clients_change = false;
+    int maxfdp1 = 0;
     bool onRun(){
         while(isRun()){
             if(!_clientsBuffer.empty()){
@@ -124,17 +168,26 @@ public:
                 for (auto item_client:_clientsBuffer){
                     _clients.push_back(item_client);
                 }
+                _clients_change = true;
                 _clientsBuffer.clear();
             }
             if(_clients.empty()) continue;
             fd_set fd_Read;
-            int maxfdp1 = 0;
+           
             //置空文件描述符
             __DARWIN_FD_ZERO(&fd_Read);
-            for(int i = (int)_clients.size()-1;i>=0;i--){
-                //设置客户端soceket的文件描述符
-                __DARWIN_FD_SET(_clients[i]->getSocket(), &fd_Read);
-                maxfdp1 = max(maxfdp1,_clients[i]->getSocket());
+            if(_clients_change){
+                _clients_change = false;
+                for(int i = (int)_clients.size()-1;i>=0;i--){
+                    //设置客户端soceket的文件描述符
+                    __DARWIN_FD_SET(_clients[i]->getSocket(), &fd_Read);
+                    maxfdp1 = max(maxfdp1,_clients[i]->getSocket());
+                }
+                //备份
+                memcpy(&_fdRead_bak,&fd_Read,sizeof(fd_set));
+            }
+            else{
+                memcpy(&fd_Read,&_fdRead_bak,sizeof(fd_set));
             }
             int ret = select(max(maxfdp1,getServerSocket())+1, &fd_Read, NULL,NULL,NULL);
             if(ret<0){
@@ -142,14 +195,18 @@ public:
                 return false;
             }
             //处理客户端socket连接请求
-            for(int i = (int)_clients.size()-1;i>=0;i--){
+            for(int i = _clients.size()-1;i>=0;i--){
                 if(__DARWIN_FD_ISSET(_clients[i]->getSocket(),&fd_Read)){
-                    if(-1==RecvMessage(_clients[i])){
+                    if(SOCKET_ERROR==RecvMessage(_clients[i])){
                         //删除当前套接字
-                        //__DARWIN_FD_CLR(gclient[i], &fd_Read);
-                        _pNetEvent->onNetLeave(_clients[i]);
+                        _clients_change = true;
+                        if(_pNetEvent){
+                            _pNetEvent->onNetLeave(_clients[i]);
+                            
+                        }
                         delete _clients[i];
                         _clients.erase(_clients.begin()+i);
+                        
                     }
                 }
             }
@@ -160,22 +217,22 @@ public:
     
     int RecvMessage(ClientSocket* clientsock) {
         //设置接收缓冲区
-        int received_len = recv(clientsock->getSocket(), szRecv, recv_buffer_size, 0);
-        header* received_header = (header*) szRecv;
+        int received_len = recv(clientsock->getSocket(), clientsock->getRecvMsg()+clientsock->getLastRecvPos(), recv_buffer_size, 0);
         //处理buffer
         if(received_len<=0){
-            return -1;
+            return SOCKET_ERROR;
         }
-        //        cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
-        memcpy(clientsock->getRecvMsg()+clientsock->getLastPos(),szRecv,received_len);
-        clientsock->setLastPos(clientsock->getLastPos()+received_len);
-        while(clientsock->getLastPos()>=sizeof(header)){
+        _pNetEvent->onNetRecv(clientsock);
+        header* received_header = (header*) clientsock->getRecvMsg();
+//        cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
+        clientsock->setLastRecvPos(clientsock->getLastRecvPos()+received_len);
+        while(clientsock->getLastRecvPos()>=sizeof(header)){
             header* received_header = (header*)clientsock->getRecvMsg();
-            if(clientsock->getLastPos()>=received_header->length){
-                int n_size = clientsock->getLastPos()-received_header->length;
+            if(clientsock->getLastRecvPos()>=received_header->length){
+                int n_size = clientsock->getLastRecvPos()-received_header->length;
                 OnNetMsg(clientsock,received_header);
                 memcpy(clientsock->getRecvMsg(), clientsock->getRecvMsg()+received_header->length, n_size);
-                clientsock->setLastPos(n_size);
+                clientsock->setLastRecvPos(n_size);
             }
             else break;
         }
@@ -185,7 +242,7 @@ public:
     //响应网络消息
     virtual void OnNetMsg(ClientSocket* client,const header* received_header) {
         _pNetEvent->onNetMsg(client,received_header);
-    //向指定socket发送数据
+        //向指定socket发送数据
     };
 };
 class Tcp_Server:public INetEvent{
@@ -194,12 +251,13 @@ private:
     vector<CellServer*> _cellServers;
 public:
     CELLTimestamp _tTime;
-    //每秒接收到的消息计数
     std::atomic_int _recvCount;
+    //每秒接收到的消息计数
+    std::atomic_int _msgCount;
     //客户端计数
     std::atomic_int _clientCount;
 public:
-    Tcp_Server():_serversocket(-1),_recvCount(0),_clientCount(0){}
+    Tcp_Server():_serversocket(-1),_recvCount(0),_clientCount(0),_msgCount(0){}
     virtual ~Tcp_Server(){
         Close_Socket();
     }
@@ -318,13 +376,15 @@ public:
     virtual void onNetLeave(ClientSocket* pClient){}
     virtual void onNetJoin(ClientSocket* pClient){}
     virtual void onNetMsg(ClientSocket* pClient,const header* received_header){}
+    virtual void onNetRecv(ClientSocket* pClient){};
     //网络消息计数
     void time4msg(){
         auto t1 = _tTime.getElapsedSecond();
         if(t1>=1.0){
-            cout<<"time:"<<t1<<" socket:"<<_serversocket<<" client num:"<<_clientCount<<"recvCount:"<<_recvCount<<endl;
+            cout<<"time:"<<t1<<" socket:"<<_serversocket<<" client num:"<<_clientCount<<"recvCount:"<<_recvCount<<"msgCount:"<<_msgCount<<endl;
             _tTime.update();
              _recvCount = 0;
+            _msgCount = 0;
         }
     }
     bool isRun() const{
