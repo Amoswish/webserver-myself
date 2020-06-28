@@ -5,6 +5,7 @@
 //  Created by wu hao on 2020/6/4.
 //  Copyright © 2020 wu hao. All rights reserved.
 //
+#include "Allocotr.cpp"
 #include <iostream>
 #include <vector>
 #include <stdio.h>
@@ -24,30 +25,41 @@ using namespace std;
 struct sockaddr_in echoserver;
 class MyServer:public Tcp_Server{
 public:
+    void* operator new(size_t size){
+        return MemoryMgr::getInstance().allocMem(size);
+    }
+    void* operator new[](size_t size){
+        return MemoryMgr::getInstance().allocMem(size);
+    }
+    void operator delete(void* p,size_t size){
+        MemoryMgr::getInstance().freeMem(p,size);
+    }
+    void operator delete[](void* p,size_t size){
+        MemoryMgr::getInstance().freeMem(p,size);
+    }
     virtual void onNetJoin(ClientSocket* pClient){
-        cout<<"加入客户端sock:"<<pClient->getSocket()<<endl;
-        _clientCount++;
+        Tcp_Server::onNetJoin(pClient);
     };
     virtual void onNetLeave(ClientSocket* pClient){
-        cout<<"客户端: "<<pClient->getSocket()<<" 退出"<<endl;
-        _clientCount--;
+        Tcp_Server::onNetLeave(pClient);
     };
     virtual void onNetRecv(ClientSocket* pClient){
-        _recvCount++;
+        Tcp_Server::onNetRecv(pClient);
     };
-    virtual void onNetMsg(ClientSocket* pClient,const header* received_header){
-        _msgCount++;
+    virtual void onNetMsg(CellServer* pCellServer,ClientSocket* pClient,const header* received_header){
+        Tcp_Server::onNetMsg(pCellServer,pClient,received_header);
         switch (received_header->cmd) {
             case CMD_LOGIN:{
                 LoginMsg *received_loginMsg = (LoginMsg*)received_header;
                 //                cout<<"username:"<<received_loginMsg->username<<" password"<<received_loginMsg->password<<endl;
                 //判断登陆的信息
                 //登陆成功
-                LoginResult login_result;
-                login_result.res = 1;
-                login_result.cmd = CMD_LOGIN_RESULT;
-                login_result.length = sizeof(LoginResult);
-                pClient->sendMsg(&login_result);
+                LoginResult *login_result = new LoginResult;
+                login_result->res = 1;
+                login_result->cmd = CMD_LOGIN_RESULT;
+                login_result->length = sizeof(LoginResult);
+                pCellServer->addSendTask(pClient,login_result);
+                //pClient->sendMsg(&login_result);
             }
                 break;
             case CMD_LOGOUT:{
@@ -55,19 +67,21 @@ public:
 //                                cout<<"username:"<<received_logoutMsg->username<<endl;
                 //判断登出的信息
                 //登出成功
-                LogoutResult logout_result;
-                logout_result.res = 1;
-                logout_result.cmd = CMD_LOGOUT_RESULT;
-                logout_result.length = sizeof(LogoutResult);
-                pClient->sendMsg(&logout_result);
+                LogoutResult *res = new LogoutResult;
+                res->res = 1;
+                res->cmd = CMD_LOGOUT_RESULT;
+                res->length = sizeof(LogoutResult);
+                pCellServer->addSendTask(pClient,res);
+//                pClient->sendMsg(&logout_result);
             }
                 break;
             default:{
                 //错误情况
-                header errorheader;
-                errorheader.cmd = ERROR;
-                errorheader.length = sizeof(errorheader);
-                pClient->sendMsg(&errorheader);
+                header *res = new header;
+                res->cmd = ERROR;
+                res->length = sizeof(res);
+                pCellServer->addSendTask(pClient,res);
+//                pClient->sendMsg(&errorheader);
             }
                 break;
         }

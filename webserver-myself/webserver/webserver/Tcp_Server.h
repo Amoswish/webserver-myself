@@ -22,6 +22,7 @@
 #include "Tcp_Server.h"
 #include "TcpMessage.h"
 #include "CELLTimestamp.h"
+#include "CELLTask.h"
 #define recv_buffer_size 10240*5
 #define send_buffer_size 10240*5
 #define SOCKET_ERROR -1
@@ -98,14 +99,29 @@ public:
         return ret;
     }
 };
+class CellServer;
 //网络事件接口
 class INetEvent{
 private:
 public:
     virtual void onNetLeave(ClientSocket* pClient) = 0;
     virtual void onNetJoin(ClientSocket* pClient) = 0;
-    virtual void onNetMsg(ClientSocket* pClient,const header* received_header) = 0;
+    virtual void onNetMsg(CellServer* pCellServer,ClientSocket* pClient,const header* received_header) = 0;
     virtual void onNetRecv(ClientSocket* pClient) = 0;
+};
+//网络f消息发送任务
+class CellSendMsgToClientTask:public CellTask{
+private:
+    ClientSocket* _pClient;
+    header* _pheader;
+public:
+    CellSendMsgToClientTask(ClientSocket* pClient,header* pheader):_pClient(pClient),_pheader(pheader){
+        
+    }
+    virtual void doTask(){
+        _pClient->sendMsg(_pheader);
+        delete _pheader;
+    }
 };
 class CellServer{
 private:
@@ -119,6 +135,7 @@ private:
     std::thread _thread;
     //网络事件对象
     INetEvent* _pNetEvent;
+    CellTaskServer _taskServer;
 public:
     CellServer(int serversocket = -1):_serversocket(serversocket),_pNetEvent(NULL){}
     virtual ~CellServer(){
@@ -141,6 +158,7 @@ public:
     }
     void Start(){
         _thread = std::thread(std::mem_fn(&CellServer::onRun),this);
+        _taskServer.Start();
     }
     //是否工作
     bool isRun() const{
@@ -214,7 +232,6 @@ public:
         return false;
     }
     //接收数据，处理粘包、拆包
-    
     int RecvMessage(ClientSocket* clientsock) {
         //设置接收缓冲区
         int received_len = recv(clientsock->getSocket(), clientsock->getRecvMsg()+clientsock->getLastRecvPos(), recv_buffer_size, 0);
@@ -241,9 +258,13 @@ public:
     }
     //响应网络消息
     virtual void OnNetMsg(ClientSocket* client,const header* received_header) {
-        _pNetEvent->onNetMsg(client,received_header);
+        _pNetEvent->onNetMsg(this,client,received_header);
         //向指定socket发送数据
     };
+    void addSendTask(ClientSocket* pClient,header* ret){
+        CellSendMsgToClientTask *task = new CellSendMsgToClientTask(pClient, ret);
+        _taskServer.addTask(task);
+    }
 };
 class Tcp_Server:public INetEvent{
 private:
@@ -373,10 +394,20 @@ public:
         onNetJoin(new_client);
     }
     //是否工作
-    virtual void onNetLeave(ClientSocket* pClient){}
-    virtual void onNetJoin(ClientSocket* pClient){}
-    virtual void onNetMsg(ClientSocket* pClient,const header* received_header){}
-    virtual void onNetRecv(ClientSocket* pClient){};
+    virtual void onNetLeave(ClientSocket* pClient){
+        cout<<"客户端: "<<pClient->getSocket()<<" 退出"<<endl;
+        _clientCount--;
+    }
+    virtual void onNetJoin(ClientSocket* pClient){
+        cout<<"加入客户端sock:"<<pClient->getSocket()<<endl;
+        _clientCount++;
+    }
+    virtual void onNetMsg(CellServer* pCellServer,ClientSocket* pClient,const header* received_header){
+        _msgCount++;
+    }
+    virtual void onNetRecv(ClientSocket* pClient){
+         _recvCount++;
+    };
     //网络消息计数
     void time4msg(){
         auto t1 = _tTime.getElapsedSecond();
