@@ -11,6 +11,14 @@
 
 #include<chrono>
 using namespace std::chrono;
+class CELLTime{
+public:
+    //获取当前时间戳（毫秒）
+    static time_t getNowInMilliSec(){
+        auto t = high_resolution_clock::now().time_since_epoch();
+        return duration_cast<milliseconds>(t).count();
+    }
+};
 class CELLTimestamp{
 public:
     CELLTimestamp(){

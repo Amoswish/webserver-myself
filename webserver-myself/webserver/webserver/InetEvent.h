@@ -9,9 +9,9 @@
 #ifndef InetEvent_h
 #define InetEvent_h
 //网络事件接口
-#include "Cell.h"
-#include "CellServer.h"
-#include "CellClient.h"
+#include "CELL.h"
+#include "CELLServer.h"
+#include "CELLClient.h"
 class INetEvent{
 private:
 public:

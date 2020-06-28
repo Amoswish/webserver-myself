@@ -10,6 +10,8 @@
 #define CELLClient_h
 
 #include "CELL.h"
+//客户端心跳检测计时时间
+#define CLIENT_HESRT_DEAD_TIME 5000
 //客户端数据类型
 class CellClient{
 private:
@@ -20,8 +22,9 @@ private:
     //消息发送缓冲区
     char _SendBuffer[RECV_BUFFER_SIZE*10];
     int _lastSendPos;
+    time_t _dtHeart;
 public:
-    CellClient(int socket = -1):_socket(socket),_lastRecvPos(0),_lastSendPos(0){
+    CellClient(int socket = -1):_socket(socket),_lastRecvPos(0),_lastSendPos(0),_dtHeart(0){
         memset(_recvMsgBuffer,'\0',RECV_BUFFER_SIZE);
         memset(_SendBuffer,'\0',SEND_BUFFER_SIZE);
     }
@@ -76,10 +79,18 @@ public:
                 break;
             }
         }
-        //        if(sendheader){
-        //            ret = send(_socket,(const char*)sendheader, sendheader->length, 0);
-        //        }
         return ret;
+    }
+    void resetDTHeart(){
+        _dtHeart = 0;
+    }
+    bool checkHeart(time_t dt){
+        _dtHeart += dt;
+        if(_dtHeart>= CLIENT_HESRT_DEAD_TIME){
+            std::cout<<"checkHeart dead.time:"<<_dtHeart<<"socket:"<<getSocket()<<std::endl;
+            return true;
+        }
+        return false;
     }
 };
 

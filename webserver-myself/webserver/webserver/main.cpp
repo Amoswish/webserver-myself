@@ -38,6 +38,7 @@ public:
         Tcp_Server::onNetMsg(pCellServer,pClient,received_header);
         switch (received_header->cmd) {
             case CMD_LOGIN:{
+                pClient->resetDTHeart();
                 NetMsg_LoginMsg *received_loginMsg = (NetMsg_LoginMsg*)received_header;
                 //                cout<<"username:"<<received_loginMsg->username<<" password"<<received_loginMsg->password<<endl;
                 //判断登陆的信息
@@ -45,10 +46,10 @@ public:
                 NetMsg_LoginResult *login_result = new NetMsg_LoginResult;
                 login_result->res = 1;
                 pCellServer->addSendTask(pClient,login_result);
-                //pClient->sendMsg(&login_result);
             }
                 break;
             case CMD_LOGOUT:{
+                pClient->resetDTHeart();
                 NetMsg_LogoutMsg *received_logoutMsg = (NetMsg_LogoutMsg*)received_header;
 //                                cout<<"username:"<<received_logoutMsg->username<<endl;
                 //判断登出的信息
@@ -56,7 +57,12 @@ public:
                 NetMsg_LogoutResult *res = new NetMsg_LogoutResult;
                 res->res = 1;
                 pCellServer->addSendTask(pClient,res);
-//                pClient->sendMsg(&logout_result);
+            }
+                break;
+            case CMD_C2S_HEART:{
+                pClient->resetDTHeart();
+                NetMsg_S2C_Heart *res = new NetMsg_S2C_Heart;
+                pCellServer->addSendTask(pClient,res);
             }
                 break;
             default:{
@@ -65,7 +71,6 @@ public:
                 res->cmd = ERROR;
                 res->length = sizeof(res);
                 pCellServer->addSendTask(pClient,res);
-//                pClient->sendMsg(&errorheader);
             }
                 break;
         }

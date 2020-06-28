@@ -9,4 +9,6 @@ dependencies: \
   /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/CellClient.h \
   /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/CELL.h \
   /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/CellServer.h \
-  /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/InetEvent.h
+  /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/InetEvent.h \
+  /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/CELLServer.h \
+  /Users/wuhao/lab/echo_server/webserver-myself/webserver/webserver/CELLClient.h
