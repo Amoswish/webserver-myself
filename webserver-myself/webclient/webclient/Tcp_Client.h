@@ -98,8 +98,8 @@ public:
         }
         memcpy(_szRecvMsg+_lastPos, _szRecv, received_len);
         _lastPos+=received_len;
-        while(_lastPos>=sizeof(header)){
-            header* received_header = (header*) _szRecvMsg;
+        while(_lastPos>=sizeof(NetMsg_Header)){
+            NetMsg_Header* received_header = (NetMsg_Header*) _szRecvMsg;
             if(_lastPos>=received_header->length){
                 int n_size = _lastPos-received_header->length;
 //                cout<<"接收的命令："<<received_header->cmd<<"接收的长度："<<received_header->length<<endl;
@@ -113,20 +113,20 @@ public:
         return 0;
     }
     //响应网络数据
-    virtual void OnNetMsg(const header* received_header) const{
+    virtual void OnNetMsg(const NetMsg_Header* received_header) const{
         switch (received_header->cmd) {
             case CMD_LOGIN_RESULT:{
-                LoginResult *received_login_result = (LoginResult*)received_header;
+                NetMsg_LoginResult *received_login_result = (NetMsg_LoginResult*)received_header;
 //                cout<<"登陆是否成功"<<received_login_result->res<<"\n"<<endl;
             }
                 break;
             case CMD_LOGOUT_RESULT:{
-                LogoutResult *received_logout_result = (LogoutResult*)received_header;
+                NetMsg_LogoutResult *received_logout_result = (NetMsg_LogoutResult*)received_header;
 //                cout<<"登出是否成功"<<received_logout_result->res<<"\n"<<endl;
             }
                 break;
             case CMD_NEWUSERJOIN:{
-                NewUserJoin *received_newuser_join = (NewUserJoin*)received_header;
+                NetMsg_NewUserJoin *received_newuser_join = (NetMsg_NewUserJoin*)received_header;
 //                cout<<"新用户加入，新用户的socket为"<<received_newuser_join->new_user_socket<<"\n"<<endl;
             }
                 break;
@@ -141,7 +141,7 @@ public:
         }
     }
     //发送消息
-    int sendMsg(const header* sendheader) const{
+    int sendMsg(const NetMsg_Header* sendheader) const{
         if(isRun()&&sendheader&&_isConnect){
             return send(get_socket(), (char*)sendheader, sendheader->length, 0);
         }

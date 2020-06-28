@@ -11,28 +11,14 @@
 #include <thread>
 #include <mutex>
 #include <list>
-//任务类型基类
-class  CellTask{
-private:
-    
-public:
-    CellTask(){
-        
-    }
-    virtual ~CellTask(){
-        
-    }
-    //执行任务
-    virtual void doTask(){
-        
-    }
-};
+#include <functional>
 class CellTaskServer{
 private:
+    typedef std::function<void()> CellTask;
     //任务数据
-    std::list<CellTask*> _tasks;
+    std::list<CellTask> _tasks;
     //任务数据缓冲区
-    std::list<CellTask*> _tasksBuffer;
+    std::list<CellTask> _tasksBuffer;
     //改变数据缓冲区是需要加锁
     std::mutex _mutex;
 public:
@@ -42,7 +28,7 @@ public:
     virtual ~CellTaskServer(){
         
     }
-    void addTask(CellTask* task){
+    void addTask(CellTask task){
         std::lock_guard<std::mutex> lock(_mutex);
         //加入到任务数据缓冲区
         _tasksBuffer.push_back(task);
@@ -68,8 +54,7 @@ public:
             }
             else{
                 for(auto itor = _tasks.begin();itor!=_tasks.end();itor++){
-                    (*itor)->doTask();
-                    delete (*itor);
+                    (*itor)();
                     itor = _tasks.erase(itor);
                 }
             }

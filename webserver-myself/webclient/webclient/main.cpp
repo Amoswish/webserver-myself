@@ -34,18 +34,18 @@ void cmd_thread(Tcp_Client* client){
         }
         else{
             if(0==strcmp(word, "login")){
-                LoginMsg send_login_msg;
+                NetMsg_LoginMsg send_login_msg;
                 strcpy(send_login_msg.username,"wuhao");
                 strcpy(send_login_msg.password,"123456");
                 send_login_msg.cmd = CMD_LOGIN;
-                send_login_msg.length = sizeof(LoginMsg);
+                send_login_msg.length = sizeof(NetMsg_LoginMsg);
                 client->sendMsg(&send_login_msg);
             }
             else if(0==strcmp(word, "logout")){
-                LogoutMsg send_logout_msg;
+                NetMsg_LogoutMsg send_logout_msg;
                 strcpy(send_logout_msg.username,"wuhao");
                 send_logout_msg.cmd = CMD_LOGOUT;
-                send_logout_msg.length = sizeof(LogoutMsg);
+                send_logout_msg.length = sizeof(NetMsg_LogoutMsg);
                 client->sendMsg(&send_logout_msg);
             }
             else{
@@ -60,6 +60,13 @@ int threadCount = 4;
 vector<Tcp_Client*> clients(clientCount*threadCount);
 atomic_int sendCount(0);
 atomic_int readyCount(0);
+void recvThread(int start,int end){
+    while(gbrun){
+        for(int i = start;i<end;i++){
+            clients[i]->onRun();
+        }
+    }
+}
 void sendThread(int index){
     int start = (index-1)*clientCount;
     int end = (index)*clientCount;
@@ -69,19 +76,25 @@ void sendThread(int index){
     }
     
     readyCount++;
+    
     while(readyCount<threadCount){
         std::chrono::milliseconds t(10);
         std::this_thread::sleep_for(t);
     }
-    LogoutMsg send_logout_msg;
+    //启动接收线程
+    std::thread thread_1(recvThread,start,end);
+    thread_1.detach();
+    //
+    NetMsg_LogoutMsg send_logout_msg;
     strcpy(send_logout_msg.username,"wuhao");
     send_logout_msg.cmd = CMD_LOGOUT;
-    send_logout_msg.length = sizeof(LogoutMsg);
+    send_logout_msg.length = sizeof(NetMsg_LogoutMsg);
     while(gbrun){
         for(int i = start;i<end;i++){
             if(-1!=clients[i]->sendMsg(&send_logout_msg)){
                 sendCount++;
-                clients[i]->onRun();
+//                std::chrono::milliseconds t(10);
+//                std::this_thread::sleep_for(t);
             }
         }
     }

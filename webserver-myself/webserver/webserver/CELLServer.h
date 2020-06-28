@@ -13,20 +13,6 @@
 #include "InetEvent.h"
 #include "CELLTask.h"
 using namespace std;
-//网络消息发送任务
-class CellSendMsgToClientTask:public CellTask{
-private:
-    CellClient* _pClient;
-    NetMsg_Header* _pheader;
-public:
-    CellSendMsgToClientTask(CellClient* pClient,NetMsg_Header* pheader):_pClient(pClient),_pheader(pheader){
-        
-    }
-    virtual void doTask(){
-        _pClient->sendMsg(_pheader);
-        delete _pheader;
-    }
-};
 class CellServer{
 private:
     //正式客户队列
@@ -166,8 +152,10 @@ public:
         //向指定socket发送数据
     };
     void addSendTask(CellClient* pClient,NetMsg_Header* ret){
-        CellSendMsgToClientTask *task = new CellSendMsgToClientTask(pClient, ret);
-        _taskServer.addTask(task);
+        _taskServer.addTask([pClient,ret](){
+            pClient->sendMsg(ret);
+            delete ret;
+        });
     }
 };
 

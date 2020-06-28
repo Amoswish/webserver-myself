@@ -774,6 +774,38 @@
 			<key>uniqueIdentifier</key>
 			<string>7A75E557-D851-4FEA-8E33-62915C914397</string>
 		</dict>
+		<key>82661C0C-9440-49F1-946E-02974050C045</key>
+		<dict>
+			<key>className</key>
+			<string>IDEActivityLogSection</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>82661C0C-9440-49F1-946E-02974050C045.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webserver project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webserver</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Build webserver</string>
+			<key>timeStartedRecording</key>
+			<real>615007320.996099</real>
+			<key>timeStoppedRecording</key>
+			<real>615007322.20566797</real>
+			<key>title</key>
+			<string>Build webserver</string>
+			<key>uniqueIdentifier</key>
+			<string>82661C0C-9440-49F1-946E-02974050C045</string>
+		</dict>
 		<key>83DE84D8-E40E-4CD0-ADC0-A7ED0E20ADCB</key>
 		<dict>
 			<key>className</key>

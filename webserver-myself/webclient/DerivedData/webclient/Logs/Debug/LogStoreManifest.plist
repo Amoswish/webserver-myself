@@ -6,6 +6,38 @@
 	<integer>10</integer>
 	<key>logs</key>
 	<dict>
+		<key>13B2C3C8-8CB6-42B9-A610-67D2DE5D2021</key>
+		<dict>
+			<key>className</key>
+			<string>DBGConsoleLog</string>
+			<key>documentTypeString</key>
+			<string>com.apple.dt.IDE.DebuggerLogContentType</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.DebugLog</string>
+			<key>fileName</key>
+			<string>13B2C3C8-8CB6-42B9-A610-67D2DE5D2021.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Debug webclient</string>
+			<key>timeStartedRecording</key>
+			<real>615005916.01189196</real>
+			<key>timeStoppedRecording</key>
+			<real>615005923.59708297</real>
+			<key>title</key>
+			<string>Debug webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>13B2C3C8-8CB6-42B9-A610-67D2DE5D2021</string>
+		</dict>
 		<key>195F28F1-91E6-4826-A9A9-15601EB4180E</key>
 		<dict>
 			<key>className</key>
@@ -37,6 +69,38 @@
 			<string>Debug webclient</string>
 			<key>uniqueIdentifier</key>
 			<string>195F28F1-91E6-4826-A9A9-15601EB4180E</string>
+		</dict>
+		<key>536541AC-DFFB-4FAE-9134-C59D364A9E9E</key>
+		<dict>
+			<key>className</key>
+			<string>DBGConsoleLog</string>
+			<key>documentTypeString</key>
+			<string>com.apple.dt.IDE.DebuggerLogContentType</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.DebugLog</string>
+			<key>fileName</key>
+			<string>536541AC-DFFB-4FAE-9134-C59D364A9E9E.xcactivitylog</string>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>webclient project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>webclient</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Debug webclient</string>
+			<key>timeStartedRecording</key>
+			<real>615007332.36408603</real>
+			<key>timeStoppedRecording</key>
+			<real>615007342.860394</real>
+			<key>title</key>
+			<string>Debug webclient</string>
+			<key>uniqueIdentifier</key>
+			<string>536541AC-DFFB-4FAE-9134-C59D364A9E9E</string>
 		</dict>
 		<key>5979A901-CA6F-4C69-9BEC-913BBF65C6CD</key>
 		<dict>
