@@ -23,6 +23,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		682D363924A82BF600E447E3 /* InetEvent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InetEvent.h; sourceTree = "<group>"; };
+		682D363A24A82EE300E447E3 /* CELL.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CELL.h; sourceTree = "<group>"; };
+		682D363D24A82FAD00E447E3 /* CELLServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CELLServer.h; sourceTree = "<group>"; };
+		682D363E24A82FDC00E447E3 /* CELLClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CELLClient.h; sourceTree = "<group>"; };
 		6869EE192488F1E90000A752 /* webserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = webserver; sourceTree = BUILT_PRODUCTS_DIR; };
 		6869EE1C2488F1E90000A752 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		6869EE3B248C9F620000A752 /* Tcp_Server.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Tcp_Server.h; sourceTree = "<group>"; };
@@ -30,8 +34,6 @@
 		6869EE3E248E25480000A752 /* CELLTimestamp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CELLTimestamp.h; sourceTree = "<group>"; };
 		688AD24824A6DEEE007256F9 /* CELLTask.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CELLTask.h; sourceTree = "<group>"; };
 		688AD24924A73F24007256F9 /* MemoryMgr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MemoryMgr.h; sourceTree = "<group>"; };
-		688AD24A24A73F39007256F9 /* Allocotr.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Allocotr.cpp; sourceTree = "<group>"; };
-		688AD24B24A73F39007256F9 /* Allocotr.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Allocotr.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,8 +72,10 @@
 				6869EE3E248E25480000A752 /* CELLTimestamp.h */,
 				688AD24824A6DEEE007256F9 /* CELLTask.h */,
 				688AD24924A73F24007256F9 /* MemoryMgr.h */,
-				688AD24A24A73F39007256F9 /* Allocotr.cpp */,
-				688AD24B24A73F39007256F9 /* Allocotr.hpp */,
+				682D363924A82BF600E447E3 /* InetEvent.h */,
+				682D363A24A82EE300E447E3 /* CELL.h */,
+				682D363D24A82FAD00E447E3 /* CELLServer.h */,
+				682D363E24A82FDC00E447E3 /* CELLClient.h */,
 			);
 			path = webserver;
 			sourceTree = "<group>";

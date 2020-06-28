@@ -10,6 +10,7 @@
 #define MemoryMgr_h
 #include <stdlib.h>
 #include <assert.h>
+#include <mutex>
 //内存池
 const int __ALIGN = 64;
 const int __MAX_BYTES = 1024;
@@ -17,6 +18,7 @@ const int __NFREELISTS = __MAX_BYTES/__ALIGN;
 const int __DEFAULT_NOBJS = 10;
 class MemoryAlloc{
 private:
+    static std::mutex _mutex;
     static size_t ROUND_UP(size_t bytes){
         return (((bytes)+__ALIGN-1)& ~(__ALIGN-1));
     }
@@ -117,6 +119,7 @@ public:
             //使用第一级
             return malloc(n);
         }
+        std::lock_guard<std::mutex> lg(_mutex);
         my_free_list = free_list+FREELIST_INDEX(n);//找到申请的空间在free_list的位置
         result = *my_free_list;
         if(result == NULL){
@@ -130,11 +133,12 @@ public:
     }
     static void deallocate(void* p,size_t n){
         obj* q = (obj*)p;
-        obj* volatile *my_free_list;
         if(n>__MAX_BYTES){
             //使用第一级
             return free(p);
         }
+        std::lock_guard<std::mutex> lg(_mutex);
+        obj* volatile *my_free_list;
         my_free_list = free_list+FREELIST_INDEX(n);
         //头插法
         q->free_list_link = *my_free_list;
@@ -146,6 +150,7 @@ char* MemoryAlloc::start_free = NULL;
 char* MemoryAlloc::end_free = NULL;
 size_t MemoryAlloc::heap_size = 0;
 MemoryAlloc::obj*  volatile MemoryAlloc::free_list[__NFREELISTS] = {NULL};
+std::mutex MemoryAlloc::_mutex;
 class MemoryMgr:MemoryAlloc {
     //单例模式-懒汉式-静态
 private:

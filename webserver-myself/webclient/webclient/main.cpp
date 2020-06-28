@@ -55,7 +55,7 @@ void cmd_thread(Tcp_Client* client){
     }
     return ;
 }
-int clientCount = 10;
+int clientCount = 50;
 int threadCount = 4;
 vector<Tcp_Client*> clients(clientCount*threadCount);
 atomic_int sendCount(0);

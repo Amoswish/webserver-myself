@@ -10,6 +10,8 @@
 #define TcpMessage_h
 #define arr_length 1024
 //static int length = 32;
+#include<iostream>
+#include "MemoryMgr.h"
 #pragma pack(1)
 enum CMD{
     CMD_LOGIN,
@@ -19,43 +21,58 @@ enum CMD{
     CMD_NEWUSERJOIN,
     ERROR
 };
-struct header{
+struct NetMsg_Header{
     int length;
     CMD cmd;
+    NetMsg_Header():length(sizeof(NetMsg_Header)),cmd(ERROR){}
+    void* operator new(size_t size){
+        //std::cout<<"new_size:"<<size<<std::endl;
+        return MemoryMgr::getInstance().allocMem(size);
+    }
+    void* operator new[](size_t size){
+        //std::cout<<"new[]_size:"<<size<<std::endl;
+        return MemoryMgr::getInstance().allocMem(size);
+    }
+    void operator delete(void* p,size_t size){
+        MemoryMgr::getInstance().freeMem(p,size);
+    }
+    void operator delete[](void* p,size_t size){
+        MemoryMgr::getInstance().freeMem(p,size);
+    }
 };
-struct LoginMsg:public header{
-    LoginMsg(){
+struct NetMsg_LoginMsg:public NetMsg_Header{
+    NetMsg_LoginMsg(){
         cmd = CMD_LOGIN;
-        length = 0;
+        length = sizeof(NetMsg_LoginMsg);
     };
     char username[arr_length];
     char password[arr_length];
 };
-struct LoginResult:public header{
-    LoginResult(){
+struct NetMsg_LoginResult:public NetMsg_Header{
+    NetMsg_LoginResult(){
         cmd = CMD_LOGIN_RESULT;
-        length = 0;
+        length = sizeof(NetMsg_LoginResult);
     };
     int res;
 };
-struct LogoutMsg:public header{
-    LogoutMsg(){
+struct NetMsg_LogoutMsg:public NetMsg_Header{
+    NetMsg_LogoutMsg(){
         cmd = CMD_LOGOUT;
         length = 0;
     };
     char username[arr_length];
 };
-struct LogoutResult:public header{
-    LogoutResult(){
+struct NetMsg_LogoutResult:public NetMsg_Header{
+    NetMsg_LogoutResult(){
         cmd = CMD_LOGOUT_RESULT;
-        length = 0;
+        length = sizeof(NetMsg_LogoutResult);
     };
     int res;
 };
-struct NewUserJoin:public header{
-    NewUserJoin(){
+struct NetMsg_NewUserJoin:public NetMsg_Header{
+    NetMsg_NewUserJoin(){
         cmd = CMD_NEWUSERJOIN;
-        length = 0;
+        length = sizeof(NetMsg_NewUserJoin);
     };
     int new_user_socket;
     int res;

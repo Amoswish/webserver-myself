@@ -5,7 +5,6 @@
 //  Created by wu hao on 2020/6/4.
 //  Copyright © 2020 wu hao. All rights reserved.
 //
-#include "Allocotr.cpp"
 #include <iostream>
 #include <vector>
 #include <stdio.h>
@@ -19,65 +18,50 @@
 #include "Tcp_Server.h"
 #include "TcpMessage.h"
 #include "CELLTimestamp.h"
+#include "MemoryMgr.h"
 using namespace std;
 #define MAXCONNECT 1024
 #define BUFFERSIZE 32
 struct sockaddr_in echoserver;
 class MyServer:public Tcp_Server{
 public:
-    void* operator new(size_t size){
-        return MemoryMgr::getInstance().allocMem(size);
-    }
-    void* operator new[](size_t size){
-        return MemoryMgr::getInstance().allocMem(size);
-    }
-    void operator delete(void* p,size_t size){
-        MemoryMgr::getInstance().freeMem(p,size);
-    }
-    void operator delete[](void* p,size_t size){
-        MemoryMgr::getInstance().freeMem(p,size);
-    }
-    virtual void onNetJoin(ClientSocket* pClient){
+    virtual void onNetJoin(CellClient* pClient){
         Tcp_Server::onNetJoin(pClient);
     };
-    virtual void onNetLeave(ClientSocket* pClient){
+    virtual void onNetLeave(CellClient* pClient){
         Tcp_Server::onNetLeave(pClient);
     };
-    virtual void onNetRecv(ClientSocket* pClient){
+    virtual void onNetRecv(CellClient* pClient){
         Tcp_Server::onNetRecv(pClient);
     };
-    virtual void onNetMsg(CellServer* pCellServer,ClientSocket* pClient,const header* received_header){
+    virtual void onNetMsg(CellServer* pCellServer,CellClient* pClient,const NetMsg_Header* received_header){
         Tcp_Server::onNetMsg(pCellServer,pClient,received_header);
         switch (received_header->cmd) {
             case CMD_LOGIN:{
-                LoginMsg *received_loginMsg = (LoginMsg*)received_header;
+                NetMsg_LoginMsg *received_loginMsg = (NetMsg_LoginMsg*)received_header;
                 //                cout<<"username:"<<received_loginMsg->username<<" password"<<received_loginMsg->password<<endl;
                 //判断登陆的信息
                 //登陆成功
-                LoginResult *login_result = new LoginResult;
+                NetMsg_LoginResult *login_result = new NetMsg_LoginResult;
                 login_result->res = 1;
-                login_result->cmd = CMD_LOGIN_RESULT;
-                login_result->length = sizeof(LoginResult);
                 pCellServer->addSendTask(pClient,login_result);
                 //pClient->sendMsg(&login_result);
             }
                 break;
             case CMD_LOGOUT:{
-                LogoutMsg *received_logoutMsg = (LogoutMsg*)received_header;
+                NetMsg_LogoutMsg *received_logoutMsg = (NetMsg_LogoutMsg*)received_header;
 //                                cout<<"username:"<<received_logoutMsg->username<<endl;
                 //判断登出的信息
                 //登出成功
-                LogoutResult *res = new LogoutResult;
+                NetMsg_LogoutResult *res = new NetMsg_LogoutResult;
                 res->res = 1;
-                res->cmd = CMD_LOGOUT_RESULT;
-                res->length = sizeof(LogoutResult);
                 pCellServer->addSendTask(pClient,res);
 //                pClient->sendMsg(&logout_result);
             }
                 break;
             default:{
                 //错误情况
-                header *res = new header;
+                NetMsg_Header *res = new NetMsg_Header;
                 res->cmd = ERROR;
                 res->length = sizeof(res);
                 pCellServer->addSendTask(pClient,res);
