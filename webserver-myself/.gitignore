@@ -1,0 +1,6 @@
+/webserver/DerivedData
+/webserver/webserver.xcodeproj
+/webclient/DerivedData
+/webclient/webclient.xcodeproj
+
+*.DS_Store
