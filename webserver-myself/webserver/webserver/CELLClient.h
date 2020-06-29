@@ -14,6 +14,7 @@
 #define CLIENT_HESRT_DEAD_TIME 60000
 //客户端定时发送间隔时间 1000表示1s
 #define CLIENT_SENDBUFFER_TIME 200
+using namespace std;
 //客户端数据类型
 class CellClient{
 private:
@@ -32,6 +33,12 @@ public:
     CellClient(int socket = -1):_socket(socket),_lastRecvPos(0),_lastSendPos(0),_dtHeart(0){
         memset(_recvMsgBuffer,'\0',RECV_BUFFER_SIZE);
         memset(_SendBuffer,'\0',SEND_BUFFER_SIZE);
+    }
+    virtual ~CellClient(){
+        cout<<"~CellClient"<<_socket<<" start"<<endl;
+        close(getSocket());
+        cout<<"~CellClient "<<_socket<<" end"<<endl;
+        _socket = INVALID_SOCKET;
     }
     int getSocket() const{
         return _socket;

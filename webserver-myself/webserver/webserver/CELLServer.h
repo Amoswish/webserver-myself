@@ -12,25 +12,41 @@
 #include "CELL.h"
 #include "InetEvent.h"
 #include "CELLTask.h"
+#include "CELLThread.h"
+#include "CELLSemaphore.h"
 using namespace std;
 class CellServer{
 private:
     //正式客户队列
     int _serversocket;
+    int _id = -1;
     std::vector<CellClient*> _clients;
     //缓冲客户队列
     std::vector<CellClient*> _clientsBuffer;
     //缓冲队列锁
     std::mutex _mutex;
-    std::thread _thread;
+    //std::thread _thread;
     //网络事件对象
     INetEvent* _pNetEvent;
+    //    备份客户端fdread
+    fd_set _fdRead_bak;
+    //    客户端列表是否有变化
+    int maxfdp1;
     CellTaskServer _taskServer;
     time_t _oldTime = CELLTime::getNowInMilliSec();
+    bool _clients_change = false;
+     //是否工作
+    CELLThread _thread;
 public:
-    CellServer(int serversocket = -1):_serversocket(serversocket),_pNetEvent(NULL){}
+    CellServer(int serversocket = INVALID_SOCKET,int cellserver_id = -1):_serversocket(serversocket),_pNetEvent(NULL),maxfdp1(0){
+        _id = cellserver_id;
+        _taskServer._serverId =_id;
+    }
     virtual ~CellServer(){
+        cout<<"~CellServer"<<_serversocket<<" start"<<endl;
+        //关闭所有客户端socket
         Close_Socket();
+        cout<<"~CellServer end"<<endl;
     }
     int getServerSocket() const{
         return _serversocket;
@@ -48,33 +64,35 @@ public:
         _clientsBuffer.push_back(clientsocket);
     }
     void Start(){
-        _thread = std::thread(std::mem_fn(&CellServer::onRun),this);
         _taskServer.Start();
-    }
-    //是否工作
-    bool isRun() const{
-        return getServerSocket()>0;
+        _thread.Start(
+            //onCreate
+            NULL,
+            //onRun
+            [this](CELLThread* thread){
+                this->onRun(thread);
+            },
+            //onClose
+            [this](CELLThread* thread){
+                this->ClearClients();
+                this->_taskServer.Close();
+            });
     }
     //关闭socket
     void Close_Socket() {
-        //关闭客户端socket
-        for(int i = (int)_clients.size()-1;i>=0;i--){
-            close(_clients[i]->getSocket());
-            delete _clients[i];
-        }
-        _clients.clear();
+        cout<<"cellserver"<<_id<<"close start"<<endl;
+        _thread.Close();
+        cout<<"cellserver"<<_id<<"close end"<<endl;
     }
-    //    备份客户端fdread
-    fd_set _fdRead_bak;
-    //    客户端列表是否有变化
-    bool _clients_change = false;
-    int maxfdp1 = 0;
-    bool onRun(){
-        while(isRun()){
+    bool onRun(CELLThread* thisThread){
+        while(thisThread->isRun()){
             if(!_clientsBuffer.empty()){
                 //自解锁
                 std::lock_guard<std::mutex> lock(_mutex);
                 for (auto item_client:_clientsBuffer){
+                    if(_pNetEvent){
+                        _pNetEvent->onNetJoin(item_client);
+                    }
                     _clients.push_back(item_client);
                 }
                 _clients_change = true;
@@ -88,7 +106,6 @@ public:
                 continue;
             }
             fd_set fd_Read;
-            
             //置空文件描述符
             __DARWIN_FD_ZERO(&fd_Read);
             if(_clients_change){
@@ -106,8 +123,9 @@ public:
             }
             int ret = select(max(maxfdp1,getServerSocket())+1, &fd_Read, NULL,NULL,NULL);
             if(ret<0){
-                cout<<"select 出错，返回-1，结束"<<endl;
-                return false;
+                cout<<"CELLServer onRun select error"<<endl;
+                thisThread->Exit();
+                break;
             }
             ReadData(fd_Read);
             CheckTime();
@@ -193,8 +211,20 @@ public:
             delete ret;
         });
     }
+private:
+    void ClearClients(){
+        if(getServerSocket()!=SOCKET_ERROR){
+            for(auto item:_clients){
+                delete item;
+            }
+            _clients.clear();
+            for(auto item:_clientsBuffer){
+                delete item;
+            }
+            _clientsBuffer.clear();
+        }
+    }
 };
-
 
 
 #endif /* CELLServer_h */

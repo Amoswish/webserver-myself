@@ -12,7 +12,12 @@
 #include <mutex>
 #include <list>
 #include <functional>
+#include "CELLSemaphore.h"
+#include "CELLThread.h"
+using namespace std;
 class CellTaskServer{
+public:
+    int _serverId = -1;
 private:
     typedef std::function<void()> CellTask;
     //任务数据
@@ -21,9 +26,9 @@ private:
     std::list<CellTask> _tasksBuffer;
     //改变数据缓冲区是需要加锁
     std::mutex _mutex;
+    CELLThread _thread;
 public:
     CellTaskServer(){
-        
     }
     virtual ~CellTaskServer(){
         
@@ -35,11 +40,17 @@ public:
     }
     //启动工作线程
     void Start(){
-        std:: thread t(std::mem_fn(&CellTaskServer::onRun),this);
-        t.detach();
+        _thread.Start(NULL,[this](CELLThread* thread){
+            this->onRun(thread);
+        });
     }
-    void onRun(){
-        while(true){
+    void Close(){
+        cout<<"CellTaskServer"<<_serverId<<"close start"<<endl;
+        _thread.Close();
+        cout<<"CellTaskServer"<<_serverId<<"close end"<<endl;
+    }
+    void onRun(CELLThread* thisThread){
+        while(thisThread->isRun()){
             if(!_tasksBuffer.empty()){
                 //从任务数据缓冲区去除数据
                 std::lock_guard<std::mutex> lock(_mutex);
@@ -57,6 +68,7 @@ public:
                     (*itor)();
                     itor = _tasks.erase(itor);
                 }
+                _tasks.clear();
             }
         }
     }

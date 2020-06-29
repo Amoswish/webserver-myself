@@ -23,6 +23,7 @@ using namespace std;
 #define MAXCONNECT 1024
 #define BUFFERSIZE 32
 struct sockaddr_in echoserver;
+
 class MyServer:public Tcp_Server{
 public:
     virtual void onNetJoin(CellClient* pClient){
@@ -76,6 +77,18 @@ public:
         }
     }
 };
+void cmd_thread(Tcp_Server* myServer){
+    while(1){
+        char word[1024];
+        cin>>word;
+        if(strlen(word)==0) continue;
+        if(0==strcmp(word, "over")) {
+            cout<<"over"<<endl;
+            myServer->Close_Socket();
+            break;
+        }
+    }
+}
 int main(int argc, const char * argv[]) {
     //创建服务器socket
     MyServer tcp_server;
@@ -86,10 +99,12 @@ int main(int argc, const char * argv[]) {
     tcp_server.Listen(MAXCONNECT);
     //处理请求
     tcp_server.Start(4);
-    while(tcp_server.isRun()){
-        tcp_server.onRun();
-    }
+    //启动UI线程
+    std::thread thread_ui(cmd_thread,&tcp_server);
+    thread_ui.join();
     //关闭服务器
     tcp_server.Close_Socket();
+    auto t = std::chrono::milliseconds(10);
+    std::this_thread::sleep_for(t);
     return 0;
 }

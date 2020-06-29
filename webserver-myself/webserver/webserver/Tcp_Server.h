@@ -19,17 +19,18 @@
 #include <memory.h>
 #include <mutex>
 #include <thread>
-#include "Cell.h"
-#include "CellClient.h"
-#include "CellServer.h"
+#include "CELL.h"
+#include "CELLClient.h"
+#include "CELLServer.h"
 #include "InetEvent.h"
-
+#include "CELLThread.h"
 using namespace std;
 
 class Tcp_Server:public INetEvent{
 private:
     int _serversocket;
     vector<CellServer*> _cellServers;
+    CELLThread _thread;
 public:
     CELLTimestamp _tTime;
     std::atomic_int _recvCount;
@@ -40,7 +41,9 @@ public:
 public:
     Tcp_Server():_serversocket(-1),_recvCount(0),_clientCount(0),_msgCount(0){}
     virtual ~Tcp_Server(){
+        cout<<"~Tcp_Server start"<<endl;
         Close_Socket();
+        cout<<"~Tcp_Server end"<<endl;
     }
     //获得socket
     int getServerSocket() const{
@@ -90,13 +93,22 @@ public:
     }
     void Start(int thread_num = 1){
         for(int i = 0;i<thread_num;i++){
-            auto ser = new CellServer(getServerSocket());
+            auto ser = new CellServer(getServerSocket(),i+1);
             //注册网络事件
             ser->setInetEvent(this);
             _cellServers.push_back(ser);
             //启动消息处理线程
             ser->Start();
         }
+        _thread.Start(
+            //onStart
+            NULL,
+            //onRun
+            [this](CELLThread* thread){
+                this->onRun(thread);
+            }
+            //onClose
+        );
     }
     //接收客户连接
     int AcceptClientConnect() const{
@@ -112,15 +124,22 @@ public:
     }
     //关闭socket
     void Close_Socket() {
+        cout<<"CloseTcp_Server start"<<endl;
         //关闭服务端socket
-        if(getServerSocket()>0){
+        _thread.Close();
+        if(getServerSocket()!=INVALID_SOCKET){
+            for(auto item:_cellServers){
+                delete item;
+            }
+            _cellServers.clear();
             close(getServerSocket());
             setServerSocket(-1);
         }
+        cout<<"CloseTcp_Server end"<<endl;
     }
     //处理网络消息
-    bool onRun(){
-        if(isRun()){
+    bool onRun(CELLThread* thisthread){
+        while(thisthread->isRun()){
             time4msg();
             fd_set fd_Read;
             //置空文件描述符
@@ -130,8 +149,9 @@ public:
             timeval time_val= {1,0};
             int ret = select(getServerSocket()+1, &fd_Read, NULL,NULL, &time_val);
             if(ret<0){
-                cout<<"select 出错，返回-1，结束"<<endl;
-                return false;
+                cout<<"Tcp_Server select Error"<<endl;
+                thisthread->Close();
+                break;
             }
             //判断当前是否有新的客户端发起请求
             if(__DARWIN_FD_ISSET(getServerSocket(), &fd_Read)){
@@ -140,9 +160,8 @@ public:
                 int clientsock = AcceptClientConnect();
                 addClientToCellServer(new CellClient(clientsock));
             }
-            return true;
         }
-        else return false;  
+        return false;
     }
     void addClientToCellServer(CellClient* new_client){
         //将客户端加入到连接数最小的线程中
@@ -177,9 +196,6 @@ public:
              _recvCount = 0;
             _msgCount = 0;
         }
-    }
-    bool isRun() const{
-        return getServerSocket()>0;
     }
 };
 
