@@ -120,18 +120,20 @@ public:
         time_t dt = nowTime-_oldTime;
         _oldTime = nowTime;
         for(auto iter = _clients.begin();iter!=_clients.end();){
+            //心跳检测
             if((*iter)->checkHeart(dt)){
                 //删除当前套接字
                 _clients_change = true;
                 if(_pNetEvent){
                     _pNetEvent->onNetLeave((*iter));
-                    
                 }
                 close((*iter)->getSocket());
                 delete (*iter);
                 iter = _clients.erase(iter);
                 continue;
             }
+            //定时发送数据检测
+            (*iter)->checkSend(dt);
             iter++;
         }
     }
