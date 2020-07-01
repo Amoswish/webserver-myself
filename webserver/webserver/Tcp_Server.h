@@ -106,8 +106,11 @@ public:
             //onRun
             [this](CELLThread* thread){
                 this->onRun(thread);
-            }
+            },
             //onClose
+            [this](CELLThread* thread){
+                this->Close_Socket();
+            }
         );
     }
     //接收客户连接

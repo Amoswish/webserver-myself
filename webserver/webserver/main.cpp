@@ -44,9 +44,13 @@ public:
                 //                cout<<"username:"<<received_loginMsg->username<<" password"<<received_loginMsg->password<<endl;
                 //判断登陆的信息
                 //登陆成功
-                NetMsg_LoginResult *login_result = new NetMsg_LoginResult;
-                login_result->res = 1;
-                pCellServer->addSendTask(pClient,login_result);
+                NetMsg_LoginResult *res = new NetMsg_LoginResult;
+                res->res = 1;
+                if(0 >= pClient->sendMsg(res)){
+                    //消息发送失败
+                    cout<<"消息发送失败"<<endl;
+                }
+//                pCellServer->addSendTask(pClient,res);
             }
                 break;
             case CMD_LOGOUT:{
@@ -57,13 +61,21 @@ public:
                 //登出成功
                 NetMsg_LogoutResult *res = new NetMsg_LogoutResult;
                 res->res = 1;
-                pCellServer->addSendTask(pClient,res);
+                if(0 >= pClient->sendMsg(res)){
+                    //消息发送失败
+                    cout<<"消息发送失败"<<endl;
+                }
+//                pCellServer->addSendTask(pClient,res);
             }
                 break;
             case CMD_C2S_HEART:{
                 pClient->resetDTHeart();
                 NetMsg_S2C_Heart *res = new NetMsg_S2C_Heart;
-                pCellServer->addSendTask(pClient,res);
+                if(0 >= pClient->sendMsg(res)){
+                    //消息发送失败
+                    cout<<"消息发送失败"<<endl;
+                }
+//                pCellServer->addSendTask(pClient,res);
             }
                 break;
             default:{
@@ -71,7 +83,11 @@ public:
                 NetMsg_Header *res = new NetMsg_Header;
                 res->cmd = ERROR;
                 res->length = sizeof(res);
-                pCellServer->addSendTask(pClient,res);
+                if(0 >= pClient->sendMsg(res)){
+                    //消息发送失败
+                    cout<<"消息发送失败"<<endl;
+                }
+//                pCellServer->addSendTask(pClient,res);
             }
                 break;
         }
@@ -101,9 +117,9 @@ int main(int argc, const char * argv[]) {
     tcp_server.Start(4);
     //启动UI线程
     std::thread thread_ui(cmd_thread,&tcp_server);
-    thread_ui.join();
+    thread_ui.detach();
     //关闭服务器
-    tcp_server.Close_Socket();
+    while(1){}
     auto t = std::chrono::milliseconds(10);
     std::this_thread::sleep_for(t);
     return 0;

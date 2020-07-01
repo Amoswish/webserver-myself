@@ -130,12 +130,17 @@ public:
 //                cout<<"新用户加入，新用户的socket为"<<received_newuser_join->new_user_socket<<"\n"<<endl;
             }
                 break;
+            case CMD_S2C_HEART:{
+                NetMsg_S2C_Heart *res = new NetMsg_S2C_Heart;
+                cout<<"CMD_S2C_HEART"<<endl;
+            }
+                break;
             case ERROR:{
                 cout<<"收到错误消息，"<<received_header->cmd<<"消息长度："<<received_header->length<<"\n"<<endl;
             }
                 break;
             default:{
-                cout<<"收到未定义消息，"<<received_header->cmd<<"消息长度："<<received_header->length<<"\n"<<endl;
+                cout<<"客户端"<<_socket<<"收到未定义消息，"<<received_header->cmd<<"消息长度："<<received_header->length<<"\n"<<endl;
             }
                 break;
         }

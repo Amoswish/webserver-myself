@@ -55,7 +55,7 @@ void cmd_thread(Tcp_Client* client){
     }
     return ;
 }
-int clientCount = 50;
+int clientCount = 100;
 int threadCount = 4;
 vector<Tcp_Client*> clients(clientCount*threadCount);
 atomic_int sendCount(0);
@@ -93,7 +93,7 @@ void sendThread(int index){
         for(int i = start;i<end;i++){
             if(-1!=clients[i]->sendMsg(&send_logout_msg)){
                 sendCount++;
-//                std::chrono::milliseconds t(10);
+//                std::chrono::milliseconds t(100);
 //                std::this_thread::sleep_for(t);
             }
         }

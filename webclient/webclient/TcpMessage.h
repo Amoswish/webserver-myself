@@ -17,6 +17,8 @@ enum CMD{
     CMD_LOGOUT,
     CMD_LOGOUT_RESULT,
     CMD_NEWUSERJOIN,
+    CMD_C2S_HEART,
+    CMD_S2C_HEART,
     ERROR
 };
 struct NetMsg_Header{
@@ -31,6 +33,18 @@ struct NetMsg_LoginMsg:public NetMsg_Header{
     };
     char username[arr_length];
     char password[arr_length];
+};
+struct NetMsg_C2S_Heart:public NetMsg_Header{
+    NetMsg_C2S_Heart(){
+        cmd = CMD_C2S_HEART;
+        length = sizeof(NetMsg_LoginMsg);
+    };
+};
+struct NetMsg_S2C_Heart:public NetMsg_Header{
+    NetMsg_S2C_Heart(){
+        cmd = CMD_S2C_HEART;
+        length = sizeof(NetMsg_LoginMsg);
+    };
 };
 struct NetMsg_LoginResult:public NetMsg_Header{
     NetMsg_LoginResult(){
